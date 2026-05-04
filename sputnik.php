@@ -20,6 +20,7 @@ define('SPUTNIK_URL', plugin_dir_url(__FILE__));
 
 // Admin
 require_once SPUTNIK_PATH . 'includes/admin/menu.php';
+require_once SPUTNIK_PATH . 'includes/admin/styles.php';
 require_once SPUTNIK_PATH . 'includes/admin/assets.php';
 require_once SPUTNIK_PATH . 'includes/admin/page.php';
 require_once SPUTNIK_PATH . 'includes/admin/settings-config.php';

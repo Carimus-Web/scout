@@ -1,3 +1,15 @@
+// Helper to escape HTML special characters
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;',
+    };
+    return text.replace(/[&<>"']/g, (m) => map[m]);
+}
+
 const app = document.getElementById('sputnik-app');
 
 let messages = [];
@@ -56,20 +68,30 @@ document.getElementById('selectButton').onclick = () => {
     document.getElementById('selectorPhase').style.display = 'none';
     document.getElementById('chatPhase').style.display = 'block';
     document.getElementById('typeBadge').innerHTML =
-        `<strong>Content Type:</strong> ${selectedLabel}`;
+        `<strong>📄 Content Type:</strong> ${selectedLabel}`;
 
     // Initial AI greeting
     addMessage(
         'assistant',
-        `I'll help you create a first draft for a ${selectedLabel}. Please describe what you'd like this page to contain.`,
+        `I'll help you create a first draft for a <strong>${selectedLabel}</strong>. Please describe what you'd like this page to contain.`,
     );
 };
 
-function addMessage(role, content) {
+function addMessage(role, content, isError = false) {
     const chatDiv = document.getElementById('chat');
     const msgDiv = document.createElement('div');
-    msgDiv.className = `sputnik-message sputnik-${role}`;
-    msgDiv.innerHTML = `<strong>${role === 'assistant' ? 'Sputnik' : 'You'}:</strong> ${content}`;
+    msgDiv.className = `sputnik-message sputnik-${role}${isError ? ' sputnik-error' : ''}`;
+
+    const label = role === 'assistant' ? 'Sputnik' : 'You';
+    const labelEl = document.createElement('strong');
+    labelEl.textContent = label;
+
+    const contentEl = document.createElement('span');
+    contentEl.innerHTML = content; // Allow HTML for tips/formatting
+
+    msgDiv.appendChild(labelEl);
+    msgDiv.appendChild(contentEl);
+
     chatDiv.appendChild(msgDiv);
     chatDiv.scrollTop = chatDiv.scrollHeight;
 }
@@ -96,8 +118,10 @@ document.getElementById('send').onclick = async () => {
     addMessage('user', text);
     messages.push({ role: 'user', content: text });
 
-    document.getElementById('send').disabled = true;
-    document.getElementById('loading').style.display = 'block';
+    const sendBtn = document.getElementById('send');
+    sendBtn.disabled = true;
+    const originalText = sendBtn.textContent;
+    sendBtn.textContent = 'Sending...';
 
     const res = await fetch(SPUTNIK.api, {
         method: 'POST',
@@ -108,11 +132,24 @@ document.getElementById('send').onclick = async () => {
     });
 
     const data = await res.json();
-    document.getElementById('send').disabled = false;
-    document.getElementById('loading').style.display = 'none';
+    sendBtn.disabled = false;
+    sendBtn.textContent = originalText;
 
     if (data.error) {
-        addMessage('assistant', `Error: ${data.error}`);
+        let errorMessage = escapeHtml(data.error);
+
+        // Add helpful context for common errors
+        if (data.error.includes('API key')) {
+            errorMessage +=
+                '<br><br><em>💡 <strong>Tip:</strong> Go to <a href="' +
+                SPUTNIK.settingsUrl +
+                '" target="_blank"><strong>Sputnik → Settings</strong></a> to configure your AI provider and API key.</em>';
+        } else if (data.error.includes('theme configuration')) {
+            errorMessage +=
+                '<br><br><em>💡 <strong>Tip:</strong> Make sure the Carimus Backbone theme is active and properly configured.</em>';
+        }
+
+        addMessage('assistant', errorMessage, true);
         return;
     }
 

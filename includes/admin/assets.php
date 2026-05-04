@@ -14,7 +14,8 @@ add_action('admin_enqueue_scripts', function ($hook) {
 
     wp_localize_script('sputnik-app', 'SPUTNIK', [
         'api' => '/wp-json/sputnik/v1/chat',
-        'postTypes' => sputnik_get_post_types()
+        'postTypes' => sputnik_get_post_types(),
+        'settingsUrl' => admin_url('admin.php?page=sputnik-settings')
     ]);
 });
 
