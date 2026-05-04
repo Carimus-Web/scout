@@ -19,8 +19,8 @@ let draftCreated = false;
 app.innerHTML = `
 <div class="sputnik-container">
   <div class="sputnik-header">
-    <h2>Sputnik - AI Content Draft Generator</h2>
-    <p class="sputnik-subtitle">Create first drafts of pages using your site's block library</p>
+    <h2>✦ Sputnik ✦</h2>
+    <p class="sputnik-subtitle">AI Content Draft Generator</p>
   </div>
   
   <div class="sputnik-selector" id="selectorPhase">
@@ -41,7 +41,7 @@ app.innerHTML = `
   </div>
   
   <div class="sputnik-loading" id="loading" style="display: none;">
-    <p>Creating draft...</p>
+    <p>Generating draft...</p>
   </div>
 </div>
 `;
@@ -98,7 +98,7 @@ function addMessage(role, content, isError = false) {
 
 document.getElementById('send').onclick = async () => {
     if (draftCreated) {
-        alert('Draft already created. Redirecting to editor...');
+        alert('Draft created! Preparing editor...');
         return;
     }
 
@@ -119,7 +119,9 @@ document.getElementById('send').onclick = async () => {
     messages.push({ role: 'user', content: text });
 
     const sendBtn = document.getElementById('send');
+    const input_area = document.getElementById('input');
     sendBtn.disabled = true;
+    input_area.disabled = true;
     const originalText = sendBtn.textContent;
     sendBtn.textContent = 'Sending...';
 
@@ -133,6 +135,7 @@ document.getElementById('send').onclick = async () => {
 
     const data = await res.json();
     sendBtn.disabled = false;
+    input_area.disabled = false;
     sendBtn.textContent = originalText;
 
     if (data.error) {
@@ -159,8 +162,12 @@ document.getElementById('send').onclick = async () => {
 
     if (data.complete) {
         draftCreated = true;
+        addMessage(
+            'assistant',
+            '✦ Draft created successfully! Opening editor...',
+        );
         setTimeout(() => {
             window.location.href = data.edit_url;
-        }, 1500);
+        }, 2000);
     }
 };
