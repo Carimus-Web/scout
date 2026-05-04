@@ -1,6 +1,7 @@
 {
     "name": "carimus/sputnik",
-    "description": "AI-powered WordPress content generator using OpenAI",
+    "description": "AI-powered content draft generator for WordPress using Carimus Backbone theme blocks",
+    "version": "1.0.0",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [

@@ -340,7 +340,56 @@ The `acf.fields` object defines the block's available ACF fields and their types
 
 ## License
 
-[Add your license here]
+Sputnik is licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html). This means you can use, modify, and distribute this plugin freely as long as you maintain the same license.
+
+## Versioning & Updates
+
+Sputnik uses semantic versioning (MAJOR.MINOR.PATCH). You can track and update the plugin across multiple installations using:
+
+### Option 1: Composer (Recommended for Development)
+
+```bash
+composer require carimus/sputnik:^1.0
+```
+
+Update with:
+
+```bash
+composer update carimus/sputnik
+```
+
+### Option 2: GitHub Releases (Manual Updates)
+
+Download releases from: [https://github.com/carimus/sputnik/releases](https://github.com/carimus/sputnik/releases)
+
+### Option 3: WordPress.org Plugin Repository (Future)
+
+Once submitted to the WordPress.org plugin repository, updates will be managed directly from the WordPress admin.
+
+### Updating the Version
+
+To release a new version:
+
+1. Update version number in `sputnik.php`:
+
+    ```php
+    define('SPUTNIK_VERSION', '1.1.0');
+    ```
+
+2. Update version in `composer.json`:
+
+    ```json
+    "version": "1.1.0",
+    ```
+
+3. Create a git tag:
+
+    ```bash
+    git tag v1.1.0
+    git push origin v1.1.0
+    ```
+
+4. Create a release on GitHub with changelog
 
 ## Support
 
