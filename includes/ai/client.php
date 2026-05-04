@@ -86,10 +86,10 @@ function sputnik_ai_openai($messages, $allowed_blocks) {
     require_once SPUTNIK_PATH . 'includes/ai/prompts.php';
     
     $prompt = sputnik_build_prompt($messages, $allowed_blocks);
-    sputnik_get_api_key('openai');
+    
+    $api_key = sputnik_get_api_key('openai');
     if (!$api_key) {
-        return ['error' => 'OpenAI API key not configured. Set it in Sputnik Settings.
-        return ['error' => 'OPENAI_API_KEY environment variable not set'];
+        return ['error' => 'OpenAI API key not configured. Set it in Sputnik Settings.'];
     }
     
     $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
