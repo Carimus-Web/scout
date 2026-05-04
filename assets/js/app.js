@@ -25,6 +25,9 @@ app.innerHTML = `
   
   <div class="sputnik-selector" id="selectorPhase">
     <label for="postType">Select Content Type:</label>
+    <div class="sputnik-selector-hint">
+      Choose the type of page you want to create. Sputnik will use AI to generate a first draft using your site's available content blocks.
+    </div>
     <select id="postType">
       <option value="">Choose a content type...</option>
     </select>
@@ -35,8 +38,10 @@ app.innerHTML = `
     <div class="sputnik-type-badge" id="typeBadge"></div>
     <div id="chat" class="sputnik-messages"></div>
     <div class="sputnik-input-area">
-      <textarea id="input" placeholder="Describe the page content..."></textarea>
-      <button id="send">Send</button>
+      <div class="sputnik-input-wrapper">
+        <textarea id="input" placeholder="Describe the content you want..."></textarea>
+        <button id="send">↓</button>
+      </div>
     </div>
   </div>
   
@@ -70,10 +75,10 @@ document.getElementById('selectButton').onclick = () => {
     document.getElementById('typeBadge').innerHTML =
         `<strong>📄 Content Type:</strong> ${selectedLabel}`;
 
-    // Initial AI greeting
+    // Initial AI greeting with helpful context
     addMessage(
         'assistant',
-        `I'll help you create a first draft for a <strong>${selectedLabel}</strong>. Please describe what you'd like this page to contain.`,
+        `Perfect! I'll help you create a first draft for a <strong>${selectedLabel}</strong>. Just describe what you'd like this page to include—topics, sections, tone, or any specific information. I'll generate content using only your site's available blocks.`,
     );
 };
 
@@ -106,7 +111,7 @@ document.getElementById('send').onclick = async () => {
     const text = input.value.trim();
 
     if (!text) {
-        alert('Please enter a description');
+        alert('Please describe what you want in your page');
         return;
     }
 
@@ -123,7 +128,7 @@ document.getElementById('send').onclick = async () => {
     sendBtn.disabled = true;
     input_area.disabled = true;
     const originalText = sendBtn.textContent;
-    sendBtn.textContent = 'Sending...';
+    sendBtn.textContent = '⏳';
 
     const res = await fetch(SPUTNIK.api, {
         method: 'POST',
