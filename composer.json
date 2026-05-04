@@ -1,0 +1,35 @@
+{
+    "name": "carimus/sputnik",
+    "description": "AI-powered WordPress content generator using OpenAI",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        {
+            "name": "Carimus",
+            "email": "digital-security@carimus.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "composer/installers": "^2.0 || ^1.0"
+    },
+    "require-dev": {
+        "wp-phpunit/wp-phpunit": "^6.0"
+    },
+    "extra": {
+        "installer-paths": {
+            "wp-content/plugins/{$name}": [
+                "type:wordpress-plugin"
+            ]
+        }
+    },
+    "keywords": [
+        "wordpress",
+        "plugin",
+        "ai",
+        "content-generation",
+        "openai",
+        "block-editor"
+    ],
+    "homepage": "https://github.com/Carimus-Web/sputnik"
+}
