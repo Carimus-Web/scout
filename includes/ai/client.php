@@ -8,13 +8,14 @@
  * - openai (GPT models)
  * - google (Gemini)
  * 
- * Set SPUTNIK_AI_PROVIDER environment variable to switch providers.
- * Defaults to 'anthropic'
+ * Configuration sources (checked in order):
+ * 1. WordPress Settings (Sputnik > Settings)
+ * 2. Environment variables (SPUTNIK_AI_PROVIDER, ANTHROPIC_API_KEY, etc)
  */
 
 function sputnik_ai_chat($messages, $allowed_blocks) {
     
-    $provider = getenv('SPUTNIK_AI_PROVIDER') ?: 'anthropic';
+    $provider = sputnik_get_ai_provider();
     
     switch ($provider) {
         case 'anthropic':
@@ -25,7 +26,7 @@ function sputnik_ai_chat($messages, $allowed_blocks) {
             return sputnik_ai_google($messages, $allowed_blocks);
         default:
             return [
-                'error' => "Unknown AI provider: {$provider}. Set SPUTNIK_AI_PROVIDER to 'anthropic', 'openai', or 'google'."
+                'error' => "Unknown AI provider: {$provider}. Configure in Sputnik Settings."
             ];
     }
 }
@@ -40,9 +41,9 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
     
     $prompt = sputnik_build_prompt($messages, $allowed_blocks);
     
-    $api_key = getenv('ANTHROPIC_API_KEY');
+    $api_key = sputnik_get_api_key('anthropic');
     if (!$api_key) {
-        return ['error' => 'ANTHROPIC_API_KEY environment variable not set'];
+        return ['error' => 'Anthropic API key not configured. Set it in Sputnik Settings.'];
     }
     
     $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
@@ -85,9 +86,9 @@ function sputnik_ai_openai($messages, $allowed_blocks) {
     require_once SPUTNIK_PATH . 'includes/ai/prompts.php';
     
     $prompt = sputnik_build_prompt($messages, $allowed_blocks);
-    
-    $api_key = getenv('OPENAI_API_KEY');
+    sputnik_get_api_key('openai');
     if (!$api_key) {
+        return ['error' => 'OpenAI API key not configured. Set it in Sputnik Settings.
         return ['error' => 'OPENAI_API_KEY environment variable not set'];
     }
     
@@ -125,9 +126,9 @@ function sputnik_ai_google($messages, $allowed_blocks) {
     
     $prompt = sputnik_build_prompt($messages, $allowed_blocks);
     
-    $api_key = getenv('GOOGLE_API_KEY');
+    $api_key = sputnik_get_api_key('google');
     if (!$api_key) {
-        return ['error' => 'GOOGLE_API_KEY environment variable not set'];
+        return ['error' => 'Google API key not configured. Set it in Sputnik Settings.'];
     }
     
     $response = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' . $api_key, [

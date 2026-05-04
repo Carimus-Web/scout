@@ -37,17 +37,19 @@ sputnik/
 │       └── app.js           # Frontend chat application
 ├── includes/
 │   ├── admin/               # Admin interface components
-│   │   ├── menu.php         # Admin menu registration
-│   │   ├── page.php         # Admin page rendering
-│   │   └── assets.php       # Admin asset loading
+│   │   ├── menu.php         # Admin menu & submenu registration
+│   │   ├── page.php         # Main Sputnik page rendering
+│   │   ├── assets.php       # Admin asset loading
+│   │   ├── settings-config.php   # Settings registration & helpers
+│   │   └── settings-page.php    # Settings page rendering
 │   ├── ai/                  # AI integration
-│   │   ├── client.php       # OpenAI API client
+│   │   ├── client.php       # Multi-provider AI client
 │   │   └── prompts.php      # AI prompt building
 │   ├── api/                 # REST API endpoints
 │   │   ├── chat-controller.php   # Chat handler logic
 │   │   └── routes.php       # API route registration
 │   ├── blocks/              # Block management
-│   │   ├── allowed.php      # Post-type block rules
+│   │   ├── allowed.php      # Block discovery from theme
 │   │   └── validator.php    # Block validation logic
 │   └── content/             # Content generation
 │       ├── block-builder.php    # WordPress block builder
@@ -104,43 +106,50 @@ activate_plugin('sputnik/sputnik.php');
 
 ### AI Provider Configuration
 
-Sputnik is **provider-agnostic** and supports multiple AI services. Choose the one that best fits your needs:
+Sputnik is **provider-agnostic** and supports multiple AI services. Configure your provider and API key in the **Sputnik Settings** page in the WordPress admin.
+
+#### Configure via WordPress Admin (Recommended)
+
+1. In WordPress admin, go to **Sputnik → Settings**
+2. Select your AI provider (Claude, OpenAI, or Gemini)
+3. Enter your API key (securely encrypted and stored)
+4. Click **Save Settings**
+
+#### Configure via Environment Variables (Fallback)
+
+If no API key is set in WordPress Settings, Sputnik will check for environment variables:
+
+```bash
+export SPUTNIK_AI_PROVIDER=anthropic  # or 'openai' or 'google'
+export ANTHROPIC_API_KEY=your_key_here
+export OPENAI_API_KEY=your_key_here
+export GOOGLE_API_KEY=your_key_here
+```
 
 #### **Recommended: Anthropic Claude** (Default)
 
 Best for block generation – superior constraint adherence and structured JSON output.
 
-```bash
-export SPUTNIK_AI_PROVIDER=anthropic
-export ANTHROPIC_API_KEY=your_key_here
-```
-
 Get API key: [https://console.anthropic.com](https://console.anthropic.com)
 
 #### Alternative: OpenAI
-
-```bash
-export SPUTNIK_AI_PROVIDER=openai
-export OPENAI_API_KEY=your_key_here
-```
 
 Get API key: [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 
 #### Alternative: Google Gemini
 
-```bash
-export SPUTNIK_AI_PROVIDER=google
-export GOOGLE_API_KEY=your_key_here
-```
-
 Get API key: [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
 ### Setup
 
-1. Choose an AI provider and set the appropriate environment variables (see Configuration section above)
-2. Activate the Sputnik plugin in WordPress
-3. Block configuration is automatic – Carimus theme defines allowed blocks and post types
-4. Navigate to Sputnik in the WordPress admin to start generating page drafts
+1. Activate the Sputnik plugin in WordPress
+2. Go to **Sputnik → Settings** in the WordPress admin
+3. Select your AI provider and enter your API key
+4. Click **Save Settings**
+5. Block configuration is automatic – Carimus theme defines allowed blocks and post types
+6. Navigate to **Sputnik** in the WordPress admin to start generating page drafts
+
+**Note:** If you prefer environment variables, you can skip step 2-4 and set `SPUTNIK_AI_PROVIDER` and the corresponding API key env var instead.
 
 ### Important Notes
 
@@ -150,6 +159,16 @@ Get API key: [https://aistudio.google.com/app/apikey](https://aistudio.google.co
 - **First Draft Only** – Sputnik generates initial content; your team handles refinement and perfection
 
 ## Core Modules
+
+### Settings Configuration (`includes/admin/settings-config.php`)
+
+Handles provider and API key configuration:
+
+- Registers WordPress settings and fields
+- Provides `sputnik_get_ai_provider()` – gets provider from WordPress options, falls back to env var
+- Provides `sputnik_get_api_key($provider)` – gets encrypted API key, falls back to env var
+- Encrypts API keys before storage, decrypts on retrieval
+- Settings accessible via **Sputnik → Settings** in WordPress admin
 
 ### Block Metadata Reader (`includes/blocks/allowed.php`)
 
@@ -176,7 +195,12 @@ Handles communication with the selected AI provider, sending:
 - Complete block metadata with ACF field schemas
 - Constraints and allowed field values
 
-Processes the AI response containing block layouts with populated ACF fields. Switch providers by setting the `SPUTNIK_AI_PROVIDER` environment variable.
+Configuration priority:
+
+1. WordPress Settings (if configured via admin)
+2. Environment variables (fallback)
+
+Processes the AI response containing block layouts with populated ACF fields.
 
 ### Chat Controller (`includes/api/chat-controller.php`)
 
@@ -243,10 +267,31 @@ Response:
 ### File Locations
 
 - **Frontend App:** `assets/js/app.js`
+- **Admin Settings:** `includes/admin/settings-config.php` and `includes/admin/settings-page.php`
 - **Admin Menu:** `includes/admin/menu.php`
 - **API Routes:** `includes/api/routes.php`
 - **Block Discovery:** `includes/blocks/allowed.php`
 - **AI Prompts:** `includes/ai/prompts.php`
+
+### Using Settings Functions
+
+In your code, use these helper functions to access AI configuration:
+
+```php
+// Get the currently configured AI provider
+$provider = sputnik_get_ai_provider();  // Returns 'anthropic', 'openai', or 'google'
+
+// Get the API key for a provider
+$api_key = sputnik_get_api_key('anthropic');  // Returns encrypted key from options or env var
+
+// Or get key for current provider
+$api_key = sputnik_get_api_key();  // Gets key for sputnik_get_ai_provider()
+```
+
+Configuration sources (checked in order):
+
+1. WordPress Settings (if admin has configured them)
+2. Environment variables (fallback)
 
 ### Adding Support for New Block Types
 
