@@ -1,4 +1,4 @@
-/* Sputnik Styles - Works with Tailwind CDN */
+/* Sputnik Styles - Custom utilities and animations */
 
 /* Font Configuration */
 #sputnik-app {
@@ -20,90 +20,41 @@
 }
 
 /* Custom Animations */
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(12px);
+@keyframes shimmer {
+    0% {
+        transform: translateX(-100%);
     }
-    to {
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+@keyframes pulse-slow {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
         opacity: 1;
         transform: translateY(0);
     }
 }
 
-@keyframes shine {
-    0% {
-        transform: translate(-100%, -100%) rotate(45deg);
-    }
-    100% {
-        transform: translate(100%, 100%) rotate(45deg);
-    }
+.group-hover\:animate-shimmer:hover::before {
+    animation: shimmer 2s infinite;
 }
 
-/* Custom Utility Classes */
-.animate-slide-in {
-    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+.animate-pulse-slow {
+    animation: pulse-slow 0.4s ease-out;
 }
 
-.animate-shine {
-    animation: shine 3s infinite;
-}
-
-/* Gradient text utility */
-.gradient-text {
-    background: linear-gradient(135deg, #00d9ff 0%, #06b6d4 100%);
+/* Ensure gradient text works */
+.bg-clip-text {
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-/* Glass morphism effect */
-.glass {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(10px);
-}
-
-/* Message utilities */
-.message-assistant {
-    background: linear-gradient(
-        135deg,
-        rgba(240, 249, 255, 0.8) 0%,
-        rgba(206, 250, 255, 0.5) 100%
-    );
-    border: 1px solid #cffafe;
-    border-left: 4px solid #22d3ee;
-    border-radius: 0.75rem;
-    padding: 0.875rem 1rem;
-    color: #1f2937;
-    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.1);
-    max-width: 85%;
-}
-
-.message-user {
-    background: linear-gradient(
-        135deg,
-        rgba(0, 217, 255, 0.2) 0%,
-        rgba(206, 250, 255, 0.15) 100%
-    );
-    color: #1f2937;
-    padding: 0.875rem 1rem;
-    border-radius: 0.75rem;
-    border: 1px solid rgba(0, 217, 255, 0.3);
-    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.08);
-    max-width: 85%;
-}
-
-.message-error {
-    background: linear-gradient(
-        135deg,
-        rgba(254, 242, 242, 0.8) 0%,
-        rgba(254, 226, 226, 0.5) 100%
-    );
-    border: 1px solid #fecaca;
-    border-left: 4px solid #ef4444;
-    border-radius: 0.75rem;
-    padding: 0.875rem 1rem;
-    color: #7f1d1d;
-    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.08);
-    max-width: 85%;
+.text-transparent {
+    -webkit-text-fill-color: transparent;
+    color: transparent;
 }

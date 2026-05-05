@@ -1,12 +1,13 @@
 <?php
 
 function sputnik_enqueue_admin_styles() {
-    // Enqueue Tailwind CSS via CDN
-    wp_enqueue_style(
+    // Enqueue Tailwind CSS via CDN (it's a JavaScript file that generates CSS)
+    wp_enqueue_script(
         'tailwindcss',
         'https://cdn.tailwindcss.com',
         [],
-        null
+        null,
+        false  // Load in head, not footer
     );
 
     // Enqueue Google Fonts (Poppins)
@@ -21,7 +22,7 @@ function sputnik_enqueue_admin_styles() {
     wp_enqueue_style(
         'sputnik-admin',
         SPUTNIK_URL . 'assets/css/admin.css',
-        ['tailwindcss', 'poppins-font'],
+        ['poppins-font'],
         SPUTNIK_VERSION
     );
 }
