@@ -68,13 +68,24 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
     if (is_wp_error($response)) {
         return ['error' => $response->get_error_message()];
     }
-    
+
+    $status_code = wp_remote_retrieve_response_code($response);
+    if ($status_code !== 200) {
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $error_message = $body['error']['message'] ?? 'Unknown error from Anthropic API';
+        return ['error' => "Anthropic API Error ({$status_code}): {$error_message}"];
+    }
+
     $body = json_decode(wp_remote_retrieve_body($response), true);
-    $content = $body['content'][0]['text'] ?? '';
-    
+    if (!$body || !isset($body['content'][0]['text'])) {
+        return ['error' => 'Invalid response format from Anthropic API'];
+    }
+
+    $content = $body['content'][0]['text'];
+
     $decoded = json_decode($content, true);
     if ($decoded) return $decoded;
-    
+
     return ['message' => $content];
 }
 

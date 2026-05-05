@@ -17,7 +17,7 @@ let selectedPostType = null;
 let draftCreated = false;
 
 app.innerHTML = `
-<div class="flex flex-col w-full max-w-2xl h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden rounded-lg shadow-lg" style="height: 90vh !important;">
+<div class="flex flex-col w-full max-w-xl h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 relative overflow-hidden rounded-lg shadow-lg" style="height: 90vh !important;">
   <!-- Header -->
   <div class="text-center px-6 py-4 border-b border-cyan-200/50 bg-white/70 backdrop-blur-sm z-10">
     <h2 class="text-4xl font-bold mb-0">
@@ -162,27 +162,58 @@ async function submitMessage() {
 
     const res = await fetch(SPUTNIK.api, {
         method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
             messages,
             postType: selectedPostType,
         }),
     });
 
-    const data = await res.json();
     sendBtn.disabled = false;
     input_area.disabled = false;
     sendBtn.textContent = '↑';
 
-    if (data.error) {
-        let errorMessage = escapeHtml(data.error);
+    // Handle HTTP errors
+    if (!res.ok) {
+        addMessage(
+            'assistant',
+            `Server error: HTTP ${res.status}. Please try again or check your configuration in Sputnik → Settings.`,
+            true,
+        );
+        input.value = '';
+        return;
+    }
+
+    let data;
+    try {
+        data = await res.json();
+    } catch (e) {
+        addMessage(
+            'assistant',
+            'Error parsing server response. Please check Sputnik Settings and try again.',
+            true,
+        );
+        input.value = '';
+        return;
+    }
+
+    // Handle API errors
+    if (!data || data.error) {
+        let errorMessage = data?.error || 'Unknown error occurred';
+        errorMessage = escapeHtml(errorMessage);
 
         // Add helpful context for common errors
-        if (data.error.includes('API key')) {
+        if (
+            errorMessage.includes('API key') ||
+            errorMessage.includes('not configured')
+        ) {
             errorMessage +=
                 '<br><br><em class="block mt-3 italic text-red-700 text-xs">💡 <strong class="font-semibold">Tip:</strong> Go to <a href="' +
                 SPUTNIK.settingsUrl +
                 '" target="_blank" class="text-cyan-600 font-bold underline hover:text-cyan-700"><strong class="font-bold">Sputnik → Settings</strong></a> to configure your AI provider and API key.</em>';
-        } else if (data.error.includes('theme configuration')) {
+        } else if (errorMessage.includes('theme configuration')) {
             errorMessage +=
                 '<br><br><em class="block mt-3 italic text-red-700 text-xs">💡 <strong class="font-semibold">Tip:</strong> Make sure the Carimus Backbone theme is active and properly configured.</em>';
         }
@@ -192,9 +223,12 @@ async function submitMessage() {
         return;
     }
 
-    messages.push(data.reply);
-    addMessage('assistant', data.reply.content);
-    input.value = '';
+    // Handle successful response
+    if (data.reply) {
+        messages.push(data.reply);
+        addMessage('assistant', data.reply.content);
+        input.value = '';
+    }
 
     if (data.complete) {
         draftCreated = true;

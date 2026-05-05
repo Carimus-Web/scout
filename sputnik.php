@@ -27,4 +27,5 @@ require_once SPUTNIK_PATH . 'includes/admin/settings-config.php';
 require_once SPUTNIK_PATH . 'includes/admin/settings-page.php';
 
 // API
+require_once SPUTNIK_PATH . 'includes/api/chat-controller.php';
 require_once SPUTNIK_PATH . 'includes/api/routes.php';
