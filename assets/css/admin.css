@@ -1,121 +1,109 @@
-@import url('https://cdn.tailwindcss.com');
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+/* Sputnik Styles - Works with Tailwind CDN */
 
-/* Tailwind Configuration for Sputnik */
-@layer base {
-    #sputnik-app {
-        @apply font-sans;
-        font-family:
-            'Poppins',
-            -apple-system,
-            BlinkMacSystemFont,
-            'Segoe UI',
-            sans-serif;
-    }
+/* Font Configuration */
+#sputnik-app {
+    font-family:
+        'Poppins',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
+}
 
-    #sputnik-app * {
-        font-family:
-            'Poppins',
-            -apple-system,
-            BlinkMacSystemFont,
-            'Segoe UI',
-            sans-serif;
-    }
+#sputnik-app * {
+    font-family:
+        'Poppins',
+        -apple-system,
+        BlinkMacSystemFont,
+        'Segoe UI',
+        sans-serif;
 }
 
 /* Custom Animations */
-@layer utilities {
-    @keyframes slideIn {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
     }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
-    @keyframes float {
-        0%,
-        100% {
-            transform: translate(0, 0);
-        }
-        50% {
-            transform: translate(30px, 30px);
-        }
+@keyframes shine {
+    0% {
+        transform: translate(-100%, -100%) rotate(45deg);
     }
+    100% {
+        transform: translate(100%, 100%) rotate(45deg);
+    }
+}
 
-    @keyframes shine {
-        0% {
-            transform: translate(-100%, -100%) rotate(45deg);
-        }
-        100% {
-            transform: translate(100%, 100%) rotate(45deg);
-        }
-    }
+/* Custom Utility Classes */
+.animate-slide-in {
+    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-    @keyframes pulse {
-        0%,
-        100% {
-            opacity: 0.3;
-            transform: scale(1);
-        }
-        50% {
-            opacity: 1;
-            transform: scale(1.2);
-        }
-    }
+.animate-shine {
+    animation: shine 3s infinite;
+}
 
-    .animate-slide-in {
-        @apply animate-[slideIn_0.4s_cubic-bezier(0.4,0,0.2,1)];
-    }
+/* Gradient text utility */
+.gradient-text {
+    background: linear-gradient(135deg, #00d9ff 0%, #06b6d4 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
 
-    .animate-float {
-        @apply animate-[float_20s_ease-in-out_infinite];
-    }
+/* Glass morphism effect */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+}
 
-    .animate-float-reverse {
-        @apply animate-[float_25s_ease-in-out_infinite_reverse];
-    }
+/* Message utilities */
+.message-assistant {
+    background: linear-gradient(
+        135deg,
+        rgba(240, 249, 255, 0.8) 0%,
+        rgba(206, 250, 255, 0.5) 100%
+    );
+    border: 1px solid #cffafe;
+    border-left: 4px solid #22d3ee;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: #1f2937;
+    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.1);
+    max-width: 85%;
+}
 
-    .animate-shine {
-        @apply animate-[shine_3s_infinite];
-    }
+.message-user {
+    background: linear-gradient(
+        135deg,
+        rgba(0, 217, 255, 0.2) 0%,
+        rgba(206, 250, 255, 0.15) 100%
+    );
+    color: #1f2937;
+    padding: 0.875rem 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(0, 217, 255, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 217, 255, 0.08);
+    max-width: 85%;
+}
 
-    .animate-pulse-glow {
-        @apply animate-[pulse_1.5s_cubic-bezier(0.4,0,0.6,1)_infinite];
-    }
-
-    /* Gradient text utility */
-    .gradient-text {
-        @apply bg-gradient-to-r from-cyan-400 to-cyan-300 bg-clip-text text-transparent;
-    }
-
-    /* Glass morphism effect */
-    .glass {
-        @apply bg-white/70 backdrop-blur-[10px];
-    }
-
-    /* Message utilities */
-    .message-assistant {
-        @apply bg-gradient-to-br from-cyan-50 to-cyan-100/50 border border-cyan-200 border-l-4 border-l-cyan-400 rounded-lg p-3.5 text-gray-800 shadow-[0_4px_16px_rgba(0,217,255,0.1)] max-w-[85%];
-    }
-
-    .message-user {
-        @apply bg-gradient-to-br from-cyan-200/20 to-cyan-100/15 text-gray-800 p-3.5 rounded-lg border border-cyan-300/30 shadow-[0_4px_16px_rgba(0,217,255,0.08)] max-w-[85%];
-    }
-
-    .message-error {
-        @apply bg-gradient-to-br from-red-50/80 to-red-100/50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-3.5 text-red-700 shadow-[0_4px_16px_rgba(231,76,60,0.08)] max-w-[85%];
-    }
-
-    /* Input focus/hover states */
-    .input-focus {
-        @apply border-cyan-400 bg-white shadow-[0_0_20px_rgba(0,217,255,0.25)];
-    }
-
-    .input-hover {
-        @apply border-cyan-400 bg-white shadow-[0_0_20px_rgba(0,217,255,0.15)];
-    }
+.message-error {
+    background: linear-gradient(
+        135deg,
+        rgba(254, 242, 242, 0.8) 0%,
+        rgba(254, 226, 226, 0.5) 100%
+    );
+    border: 1px solid #fecaca;
+    border-left: 4px solid #ef4444;
+    border-radius: 0.75rem;
+    padding: 0.875rem 1rem;
+    color: #7f1d1d;
+    box-shadow: 0 4px 16px rgba(231, 76, 60, 0.08);
+    max-width: 85%;
 }

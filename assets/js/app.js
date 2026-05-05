@@ -25,10 +25,10 @@ app.innerHTML = `
   
   <div class="flex flex-col items-center justify-center flex-1 px-5 py-10 z-10" id="selectorPhase">
     <label for="postType" class="block mb-3 font-semibold text-gray-800 text-base">Select Content Type:</label>
-    <div class="max-w-md text-center mb-8 text-gray-700 text-sm leading-relaxed sputnik-selector-hint">
+    <div class="max-w-md text-center mb-8 text-gray-700 text-sm leading-relaxed">
       Choose the type of page you want to create. Sputnik will use AI to generate a first draft using your site's available content blocks.
     </div>
-    <select id="postType" class="w-full max-w-sm px-4 py-3.5 mb-5 border-2 border-gray-300 rounded-xl text-base bg-white text-gray-900 cursor-pointer transition-all shadow-sm hover:input-hover focus:input-focus">
+    <select id="postType" class="w-full max-w-sm px-4 py-3.5 mb-5 border-2 border-gray-300 rounded-xl text-base bg-white text-gray-900 cursor-pointer transition-all shadow-sm hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(0,217,255,0.15)] focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(0,217,255,0.25)] focus:outline-none">
       <option value="">Choose a content type...</option>
     </select>
     <button id="selectButton" class="w-full max-w-sm px-10 py-3.5 bg-gradient-to-r from-cyan-400 to-cyan-500 text-white rounded-xl font-bold uppercase tracking-wider transition-all shadow-lg hover:shadow-2xl hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden">
@@ -42,7 +42,7 @@ app.innerHTML = `
     <div id="chat" class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-4 bg-transparent"></div>
     <div class="px-6 py-5 border-t border-cyan-200/30 bg-gradient-to-r from-slate-100/40 to-white/50 flex gap-2.5 items-end glass z-10">
       <div class="flex-1 relative">
-        <textarea id="input" class="w-full px-4 py-3.5 pr-14 border-2 border-gray-300 rounded-xl font-normal text-sm leading-relaxed resize-none max-h-[120px] min-h-[44px] bg-white text-gray-900 transition-all shadow-sm hover:input-hover focus:input-focus" placeholder="Describe the content you want..."></textarea>
+        <textarea id="input" class="w-full px-4 py-3.5 pr-14 border-2 border-gray-300 rounded-xl font-normal text-sm leading-relaxed resize-none max-h-[120px] min-h-[44px] bg-white text-gray-900 transition-all shadow-sm hover:border-cyan-400 hover:shadow-[0_0_20px_rgba(0,217,255,0.15)] focus:border-cyan-400 focus:shadow-[0_0_20px_rgba(0,217,255,0.25)] focus:outline-none" placeholder="Describe the content you want..."></textarea>
         <button id="send" class="absolute right-3 bottom-3 w-8 h-8 p-0 bg-gradient-to-r from-cyan-400 to-cyan-500 text-white rounded-lg font-bold text-lg flex items-center justify-center transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 relative overflow-hidden disabled:opacity-60 disabled:cursor-not-allowed">
           <span class="absolute inset-0 bg-gradient-to-r from-transparent via-white/15 to-transparent animate-shine"></span>
           <span class="relative">↓</span>
