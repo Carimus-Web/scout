@@ -53,6 +53,11 @@ add_action('admin_init', 'sputnik_register_settings');
  * Sanitize and encrypt API key
  */
 function sputnik_sanitize_api_key($value) {
+    // If the value is the mask (user didn't change it), keep the existing key
+    if ($value === '••••••••••••') {
+        return get_option('sputnik_api_key', '');
+    }
+    
     if (empty($value)) {
         return '';
     }

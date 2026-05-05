@@ -53,7 +53,7 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
             'content-type' => 'application/json'
         ],
         'body' => json_encode([
-            'model' => 'claude-3-5-sonnet-20241022',
+            'model' => 'claude-sonnet-4-6',
             'max_tokens' => 2048,
             'messages' => [
                 [
@@ -62,7 +62,8 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
                 ]
             ],
             'system' => $prompt[0]['content']
-        ])
+        ]),
+        'timeout' => 60
     ]);
     
     if (is_wp_error($response)) {
@@ -112,7 +113,8 @@ function sputnik_ai_openai($messages, $allowed_blocks) {
             'model' => 'gpt-4-turbo',
             'messages' => $prompt,
             'temperature' => 0.7
-        ])
+        ]),
+        'timeout' => 60
     ]);
     
     if (is_wp_error($response)) {
@@ -164,7 +166,8 @@ function sputnik_ai_google($messages, $allowed_blocks) {
                     ]
                 ]
             ]
-        ])
+        ]),
+        'timeout' => 60
     ]);
     
     if (is_wp_error($response)) {

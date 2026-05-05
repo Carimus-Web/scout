@@ -35,14 +35,27 @@ add_action('wp_loaded', function () {
                 // Debug: check WP version and theme
                 global $wp_version;
                 
+                // Debug API key storage
+                $provider = sputnik_get_ai_provider();
+                $stored_key = get_option('sputnik_api_key', '');
+                $retrieved_key = sputnik_get_api_key($provider);
+                $key_length = strlen($retrieved_key);
+                
                 // Log for debugging
                 error_log('Sputnik Test - Discovered blocks: ' . count($all_discovered_blocks) . ', Carimus blocks: ' . count($carimus_blocks));
+                error_log('Sputnik Test - Provider: ' . $provider . ', Key stored: ' . (!empty($stored_key) ? 'YES' : 'NO') . ', Key retrieved length: ' . $key_length);
                 
                 return [
                     'status' => 'API is working',
                     'received' => $params,
                     'provider' => sputnik_get_ai_provider(),
                     'has_key' => !empty(sputnik_get_api_key(sputnik_get_ai_provider())),
+                    'api_key_debug' => [
+                        'provider' => $provider,
+                        'stored_in_options' => !empty($stored_key),
+                        'retrieved_key_length' => $key_length,
+                        'first_10_chars' => substr($retrieved_key, 0, 10),
+                    ],
                     'wp_version' => $wp_version ?? 'unknown',
                     'current_theme' => wp_get_theme()->get('Name') ?? 'none',
                     'blocks_api_exists' => $blocks_function_exists,
@@ -66,6 +79,21 @@ add_action('wp_loaded', function () {
                 return sputnik_chat_handler($request);
             } catch (Throwable $e) {
                 error_log('Sputnik Chat Error: ' . $e->getMessage());
+                return [
+                    'error' => $e->getMessage()
+                ];
+            }
+        },
+        'permission_callback' => '__return_true',
+    ]);
+    
+    register_rest_route('sputnik/v1', '/create-page', [
+        'methods' => 'POST',
+        'callback' => function($request) {
+            try {
+                return sputnik_create_page_handler($request);
+            } catch (Throwable $e) {
+                error_log('Sputnik Create Page Error: ' . $e->getMessage());
                 return [
                     'error' => $e->getMessage()
                 ];

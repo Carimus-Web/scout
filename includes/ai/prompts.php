@@ -44,7 +44,8 @@ function sputnik_build_prompt($messages, $allowed_blocks) {
             "4. Do NOT try to design the page layout - that's already defined by the blocks\n" .
             "5. Do NOT suggest removing or changing blocks - work with what's available\n" .
             "6. If you don't have enough information, ask clarifying questions\n" .
-            "7. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
+            "7. Do NOT include emojis in any field values - keep content professional and text-only\n" .
+            "8. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
             "JSON FORMAT (return ONLY when ready to build):\n" .
             "{\n" .
             "  \"layout\": [\n" .

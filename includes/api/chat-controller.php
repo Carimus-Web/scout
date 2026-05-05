@@ -87,13 +87,33 @@ function sputnik_chat_handler($request) {
                 ];
             }
 
+            error_log('Post created in chat_handler, ID: ' . $post_id);
+            
+            $edit_url = get_edit_post_link($post_id, 'raw');
+            $post_url = get_permalink($post_id);
+            
+            error_log('Chat handler URLs - edit_url: ' . ($edit_url ? $edit_url : 'null') . ', post_url: ' . ($post_url ? $post_url : 'null'));
+            
+            // Fallback: construct edit URL manually if get_edit_post_link returns null
+            if (!$edit_url) {
+                error_log('get_edit_post_link returned null in chat_handler, using fallback');
+                $edit_url = admin_url('post.php?post=' . $post_id . '&action=edit');
+            }
+            
+            // If post_url is null, construct it as preview
+            if (!$post_url) {
+                error_log('get_permalink returned null in chat_handler, using preview URL');
+                $post_url = add_query_arg('preview', 'true', get_home_url() . '?p=' . $post_id);
+            }
+
             return [
                 'reply' => [
                     'role' => 'assistant',
                     'content' => 'Page draft created successfully! Redirecting to editor...'
                 ],
                 'complete' => true,
-                'edit_url' => get_edit_post_link($post_id, 'raw')
+                'edit_url' => $edit_url,
+                'post_url' => $post_url
             ];
         }
 
@@ -108,6 +128,70 @@ function sputnik_chat_handler($request) {
     } catch (Exception $e) {
         return [
             'error' => 'Error processing request: ' . $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Handler for creating a page with blocks
+ * Called when frontend needs to create a draft page from layout JSON
+ */
+function sputnik_create_page_handler($request) {
+    try {
+        error_log('Sputnik Create Page Handler Called');
+        
+        $params = $request->get_json_params();
+        $layout = isset($params['layout']) ? $params['layout'] : null;
+        $postType = isset($params['postType']) ? $params['postType'] : null;
+
+        if (empty($layout) || empty($postType)) {
+            return [
+                'error' => 'Missing required parameters: layout and postType'
+            ];
+        }
+
+        error_log('Creating page with post type: ' . $postType);
+        $post_id = sputnik_create_post($postType, $layout);
+
+        if (is_wp_error($post_id)) {
+            error_log('Failed to create post: ' . $post_id->get_error_message());
+            return [
+                'error' => 'Failed to create post: ' . $post_id->get_error_message()
+            ];
+        }
+
+        error_log('Page created with ID: ' . $post_id);
+        
+        // Get the URLs - these can be null if post doesn't exist
+        $edit_url = get_edit_post_link($post_id, 'raw');
+        $post_url = get_permalink($post_id);
+        
+        error_log('Edit URL: ' . ($edit_url ? $edit_url : 'null'));
+        error_log('Post URL: ' . ($post_url ? $post_url : 'null'));
+        
+        // Fallback: construct edit URL manually if get_edit_post_link returns null
+        if (!$edit_url) {
+            error_log('get_edit_post_link returned null, using fallback URL construction');
+            $edit_url = admin_url('post.php?post=' . $post_id . '&action=edit');
+            error_log('Fallback edit URL: ' . $edit_url);
+        }
+        
+        // If post_url is null, construct it as preview
+        if (!$post_url) {
+            error_log('get_permalink returned null, using preview URL');
+            $post_url = add_query_arg('preview', 'true', get_home_url() . '?p=' . $post_id);
+        }
+        
+        return [
+            'success' => true,
+            'post_id' => $post_id,
+            'edit_url' => $edit_url,
+            'post_url' => $post_url
+        ];
+    } catch (Exception $e) {
+        error_log('Create Page Error: ' . $e->getMessage());
+        return [
+            'error' => 'Error creating page: ' . $e->getMessage()
         ];
     }
 }

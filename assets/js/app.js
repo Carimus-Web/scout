@@ -10,6 +10,64 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, (m) => map[m]);
 }
 
+// Simple markdown parser for chat messages
+function parseMarkdown(text) {
+    // Escape HTML first to prevent injection
+    text = escapeHtml(text);
+
+    // Bold: **text** or __text__
+    text = text.replace(
+        /\*\*(.*?)\*\*/g,
+        '<strong class="font-semibold">$1</strong>',
+    );
+    text = text.replace(
+        /__(.*?)__/g,
+        '<strong class="font-semibold">$1</strong>',
+    );
+
+    // Italic: *text* or _text_
+    text = text.replace(/\*(.*?)\*/g, '<em class="italic">$1</em>');
+    text = text.replace(/_(.*?)_/g, '<em class="italic">$1</em>');
+
+    // Code inline: `text`
+    text = text.replace(
+        /`(.*?)`/g,
+        '<code class="bg-gray-200 px-1 rounded text-xs font-mono">$1</code>',
+    );
+
+    // Links: [text](url)
+    text = text.replace(
+        /\[(.*?)\]\((.*?)\)/g,
+        '<a href="$2" target="_blank" class="text-cyan-600 font-semibold underline hover:text-cyan-700 break-all">$1</a>',
+    );
+
+    // Numbered lists: 1. text
+    text = text.replace(
+        /^\d+\.\s+(.*?)$/gm,
+        '<li class="ml-4 list-decimal">$1</li>',
+    );
+
+    // Bullet lists: - text or * text
+    text = text.replace(
+        /^[-*]\s+(.*?)$/gm,
+        '<li class="ml-4 list-disc">$1</li>',
+    );
+
+    // Wrap consecutive list items in <ul>
+    text = text.replace(/(<li.*?<\/li>[\s\n]*)+/g, function (match) {
+        return '<ul class="space-y-1 my-2">' + match + '</ul>';
+    });
+
+    // Line breaks: preserve double newlines as paragraph breaks
+    text = text.replace(/\n\n/g, '</p><p class="mt-2">');
+    text = '<p>' + text + '</p>';
+
+    // Single newlines become <br>
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
+}
+
 const app = document.getElementById('sputnik-app');
 
 let messages = [];
@@ -151,7 +209,7 @@ document.getElementById('selectButton').onclick = () => {
     // Initial AI greeting with helpful context
     addMessage(
         'assistant',
-        `Perfect! I'll help you create a first draft for a <strong class="text-cyan-600">${selectedLabel}</strong>. Just describe what you'd like this page to include—topics, sections, tone, or any specific information. I'll generate content using only your site's available blocks.`,
+        `Perfect! I'll help you create a first draft for a **${selectedLabel}**. Just describe what you'd like this page to include—topics, sections, tone, or any specific information. I'll generate content using only your site's available blocks.`,
     );
 };
 
@@ -163,24 +221,40 @@ function addMessage(role, content, isError = false) {
     let classes = 'flex items-start gap-3 animate-pulse-slow';
     let labelClasses =
         'flex-shrink-0 font-bold text-xs uppercase tracking-widest mt-1';
-    let contentClasses = 'flex-1 leading-relaxed text-xs break-words';
+    let contentClasses =
+        'flex-1 leading-relaxed text-xs break-words overflow-hidden';
 
     // Role-specific styling
     if (role === 'assistant' && !isError) {
         msgDiv.className = classes + ' justify-start';
         labelClasses += ' text-cyan-600';
         contentClasses +=
-            ' bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 border-l-4 border-l-cyan-400 rounded-lg p-2 text-gray-800 shadow-md';
+            ' bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 border-l-4 border-l-cyan-400 rounded-lg p-3 text-gray-800 shadow-md prose prose-sm max-w-none';
+
+        // Parse markdown for assistant messages
+        content = parseMarkdown(content);
     } else if (role === 'user') {
         msgDiv.className = classes + ' justify-end';
         labelClasses += ' text-cyan-700 order-2 ml-3';
         contentClasses +=
-            ' order-1 bg-cyan-100/60 border border-cyan-300/50 rounded-lg p-2 text-gray-900 shadow-sm';
+            ' order-1 bg-cyan-100/60 border border-cyan-300/50 rounded-lg p-3 text-gray-900 shadow-sm whitespace-pre-wrap word-break break-words';
+
+        // Escape HTML and preserve line breaks for user messages
+        content = escapeHtml(content).replace(/\n/g, '<br>');
+
+        // Make links clickable and ensure they wrap
+        content = content.replace(
+            /https?:\/\/[^\s<]+/g,
+            '<a href="$&" target="_blank" class="text-cyan-600 font-semibold underline hover:text-cyan-700 break-all">$&</a>',
+        );
     } else if (isError) {
         msgDiv.className = classes + ' justify-start';
         labelClasses += ' text-red-600';
         contentClasses +=
-            ' bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-2 text-red-900 shadow-md';
+            ' bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-3 text-red-900 shadow-md';
+
+        // Escape HTML for error messages
+        content = escapeHtml(content);
     }
 
     // Create label
@@ -308,24 +382,238 @@ async function submitMessage() {
     // Handle successful response
     if (data.reply) {
         messages.push(data.reply);
-        addMessage('assistant', data.reply.content);
-        input.value = '';
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewIdle').style.display = 'flex';
-    }
 
-    if (data.complete) {
+        // Check if this is a draft completion (backend already created page)
+        if (data.complete && data.edit_url) {
+            console.log('Backend created page with edit_url:', data.edit_url);
+            addMessage(
+                'assistant',
+                '✓ Draft page created! Opening in the editor now...',
+            );
+            draftCreated = true;
+            setTimeout(() => {
+                window.location.href = data.edit_url;
+            }, 1500);
+            input.value = '';
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewIdle').style.display = 'flex';
+            return;
+        }
+
+        // Check if response is a JSON layout (page layout as string)
+        let replyContent = data.reply.content;
+        let isLayoutJson = false;
+        let layoutData = null;
+
+        try {
+            // Strip markdown code blocks - handle various formats:
+            // - Triple backticks: ```json ... ```
+            // - Single backticks: `json ... `
+            // - No backticks
+            let cleanContent = replyContent
+                .trim()
+                .replace(/^```+\s*(?:json|javascript)?\s*\n?/i, '') // Remove opening triple backticks with optional language
+                .replace(/^`+\s*(?:json|javascript)?\s*\n?/i, '') // Remove opening single backticks with optional language
+                .replace(/\n?```+\s*$/i, '') // Remove closing triple backticks
+                .replace(/\n?`+\s*$/i, '') // Remove closing single backticks
+                .trim();
+
+            console.log('Cleaned content length:', cleanContent.length);
+            console.log(
+                'Cleaned content preview:',
+                cleanContent.substring(0, 100),
+            );
+
+            layoutData = JSON.parse(cleanContent);
+            if (
+                layoutData &&
+                layoutData.layout &&
+                Array.isArray(layoutData.layout)
+            ) {
+                isLayoutJson = true;
+                console.log(
+                    'Detected layout JSON with',
+                    layoutData.layout.length,
+                    'blocks',
+                );
+            }
+        } catch (e) {
+            // Not JSON, treat as regular message
+            console.log('Reply is not JSON:', e.message);
+            console.log(
+                'First 200 chars of content:',
+                replyContent.substring(0, 200),
+            );
+        }
+
+        if (isLayoutJson) {
+            // Layout detected - create page and show preview
+            addMessage('assistant', '✓ Creating your page...');
+
+            // Create the post with the layout
+            document.getElementById('previewLoading').style.display = 'flex';
+            document.getElementById('loadingStatus').textContent =
+                'Creating your page...';
+
+            console.log(
+                'Calling createPageWithBlocks with',
+                layoutData.layout.length,
+                'blocks',
+            );
+            createPageWithBlocks(layoutData.layout, selectedPostType);
+        } else {
+            // Regular message response
+            addMessage('assistant', data.reply.content);
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewIdle').style.display = 'flex';
+        }
+
+        input.value = '';
+    }
+}
+
+// Create WordPress page with blocks from layout JSON
+async function createPageWithBlocks(layout, postType) {
+    try {
+        const endpoint = SPUTNIK.api.replace('/chat', '/create-page');
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                layout: layout,
+                postType: postType,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.error) {
+            addMessage(
+                'assistant',
+                `Error creating page: ${result.error}`,
+                true,
+            );
+            document.getElementById('previewLoading').style.display = 'none';
+            document.getElementById('previewError').style.display = 'flex';
+            document.getElementById('errorMessage').textContent = result.error;
+            return;
+        }
+
+        // Page created successfully - show preview in iframe
         draftCreated = true;
+
+        // Show preview instead of redirecting
+        renderPreviewIframe(result.post_url, result.edit_url);
+
+        document.getElementById('previewLoading').style.display = 'none';
+    } catch (error) {
+        addMessage('assistant', `Error creating page: ${error.message}`, true);
+        document.getElementById('previewLoading').style.display = 'none';
+        document.getElementById('previewError').style.display = 'flex';
+        document.getElementById('errorMessage').textContent = error.message;
+    }
+}
+
+// Render preview using iframe of the actual draft post
+function renderPreviewIframe(postUrl, editUrl) {
+    console.log('Rendering preview iframe for:', postUrl, 'Edit URL:', editUrl);
+
+    const previewDiv = document.getElementById('previewWindow');
+    const previewIdle = document.getElementById('previewIdle');
+
+    // Null checks to prevent "Cannot read properties of null" errors
+    if (!previewDiv || !previewIdle) {
         addMessage(
             'assistant',
-            '✦ Draft created successfully! Opening editor...',
+            'Error: Preview elements not found in page. Please refresh and try again.',
+            true,
         );
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewIdle').style.display = 'flex';
-        setTimeout(() => {
-            window.location.href = data.edit_url;
-        }, 2000);
+        return;
     }
+
+    if (!postUrl || !editUrl) {
+        addMessage(
+            'assistant',
+            `Error: Invalid page URLs returned from server. Post URL: ${postUrl}, Edit URL: ${editUrl}`,
+            true,
+        );
+        return;
+    }
+
+    previewIdle.style.display = 'none';
+
+    // Build iframe preview
+    let previewHTML = `
+        <div class="flex flex-col w-full h-full bg-white">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50">
+                <div>
+                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-widest">Preview</p>
+                    <h2 class="text-lg font-bold text-gray-900">Draft Page</h2>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="document.getElementById('previewFrame').contentWindow.location.reload()" class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg font-semibold text-sm transition-all">
+                        ↻ Refresh
+                    </button>
+                    <button onclick="openPageInEditor('${editUrl}')" class="px-4 py-2 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white rounded-lg font-semibold text-sm transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0">
+                        Edit in WordPress
+                    </button>
+                </div>
+            </div>
+            
+            <!-- iframe container with responsive scaling for 1440px desktop preview -->
+            <div class="flex-1 overflow-auto bg-gray-100 flex items-stretch justify-center">
+                <div class="w-full h-full" id="iframeScaler">
+                    <iframe id="previewFrame" src="${postUrl}" class="border-0 w-full" style="transform-origin: left top !important;"></iframe>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-center">
+                <p class="text-xs text-gray-600">Previewing your draft page at 1440px width. Content scales to fit. Click "Refresh" to reload or "Edit in WordPress" to make changes.</p>
+            </div>
+        </div>
+    `;
+
+    previewDiv.innerHTML = previewHTML;
+
+    // Set up iframe scaling to maintain 1440px width within parent container
+    setTimeout(() => {
+        const scaler = document.getElementById('iframeScaler');
+        const frame = document.getElementById('previewFrame');
+        if (scaler && frame) {
+            const calculateScale = () => {
+                const parentWidth = scaler.clientWidth;
+                const parentHeight = scaler.clientHeight;
+                const targetWidth = 1440;
+                const scale = parentWidth / targetWidth;
+                // Calculate height so that when scaled, it fills the parent height
+                const unscaledHeight = parentHeight / Math.max(scale, 0.1);
+                frame.style.width = targetWidth + 'px';
+                frame.style.height = unscaledHeight + 'px';
+                frame.style.transform = `scale(${Math.min(scale, 1)})`;
+                frame.style.transformOrigin = 'left top';
+            };
+            calculateScale();
+            window.addEventListener('resize', calculateScale);
+        }
+    }, 100);
+
+    // Show success message after preview is set up
+    addMessage(
+        'assistant',
+        '✓ Done! Page preview loaded. Click "Edit in WordPress" to make changes or continue chatting to refine it.',
+    );
+}
+
+function openPageInEditor(editUrl) {
+    window.location.href = editUrl;
 }
 
 // Send button click handler
