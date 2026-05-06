@@ -141,13 +141,24 @@ app.innerHTML = `
     </div>
 
     <!-- Loading State -->
-    <div id="previewLoading" class="hidden flex flex-col items-center justify-center gap-8 z-10 rounded">
-      <div class="space-y-8">
+    <div id="previewLoading" class="hidden flex flex-col items-center justify-center gap-8 z-10 rounded w-full h-full relative overflow-hidden" style="background: linear-gradient(-45deg, #ffffff, #f1f6fd, #e8eff8, #f3f8fc, #eff4fa); background-size: 300% 300%; animation: space-gradient 4s ease infinite;">
+      <!-- Animated background elements -->
+      <div class="absolute top-0 left-0 w-full h-full overflow-hidden">
+        <div style="position: absolute; width: 2px; height: 2px; background: #0ea5e9; border-radius: 50%; opacity: 0.30; left: 10%; top: 20%; animation: floating-stars 15s linear infinite;"></div>
+        <div style="position: absolute; width: 1.5px; height: 1.5px; background: #06b6d4; border-radius: 50%; opacity: 0.46; left: 20%; top: 10%; animation: floating-stars 20s linear infinite 2s;"></div>
+        <div style="position: absolute; width: 1px; height: 1px; background: #0ea5e9; border-radius: 50%; opacity: 0.44; left: 30%; top: 30%; animation: floating-stars 18s linear infinite 1s;"></div>
+        <div style="position: absolute; width: 2px; height: 2px; background: #06b6d4; border-radius: 50%; opacity: 0.49; left: 50%; top: 15%; animation: floating-stars 22s linear infinite 3s;"></div>
+        <div style="position: absolute; width: 1.5px; height: 1.5px; background: #0ea5e9; border-radius: 50%; opacity: 0.45; left: 70%; top: 25%; animation: floating-stars 19s linear infinite 2.5s;"></div>
+        <div style="position: absolute; width: 1px; height: 1px; background: #06b6d4; border-radius: 50%; opacity: 0.48; left: 80%; top: 40%; animation: floating-stars 17s linear infinite 1.5s;"></div>
+      </div>
+
+      <!-- Loading content -->
+      <div class="space-y-8 relative z-10">
         <!-- Animated Spinner -->
         <div class="flex justify-center">
           <div class="animate-spin-gentle">
-            <svg class="w-16 h-16 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" opacity="0.2"></circle>
+            <svg class="w-16 h-16 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.4));">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" opacity="0.3"></circle>
               <path d="M12 2a10 10 0 0 1 7.07 17.07M12 2a10 10 0 0 0 0 20" stroke="currentColor" stroke-width="2"></path>
             </svg>
           </div>
@@ -156,9 +167,9 @@ app.innerHTML = `
           <h3 class="text-lg font-bold text-gray-800">Sputnik is thinking...</h3>
           <p id="loadingStatus" class="text-sm text-gray-600">Generating your first draft</p>
           <div class="flex justify-center gap-1 mt-4">
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
-            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
+            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
+            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.4s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
           </div>
         </div>
       </div>
@@ -287,12 +298,23 @@ function showPreviewLoading() {
     if (!loadingEl) {
         previewDiv.innerHTML = `
             <div id="previewIdle" style="display: none;" class="flex flex-col items-center justify-center gap-8 px-8 text-center z-10"></div>
-            <div id="previewLoading" class="flex flex-col items-center justify-center gap-8 z-10 rounded">
-                <div class="space-y-8">
+            <div id="previewLoading" class="flex flex-col items-center justify-center gap-8 z-10 rounded w-full h-full relative overflow-hidden" style="background: linear-gradient(-45deg, #ffffff, #f1f6fd, #e8eff8, #f3f8fc, #eff4fa); background-size: 300% 300%; animation: space-gradient 8s ease infinite;">
+                <!-- Animated background elements -->
+                <div class="absolute top-0 left-0 w-full h-full overflow-hidden">
+                    <div style="position: absolute; width: 2px; height: 2px; background: #0ea5e9; border-radius: 50%; opacity: 0.30; left: 10%; top: 20%; animation: floating-stars 15s linear infinite;"></div>
+                    <div style="position: absolute; width: 1.5px; height: 1.5px; background: #06b6d4; border-radius: 50%; opacity: 0.26; left: 20%; top: 10%; animation: floating-stars 20s linear infinite 2s;"></div>
+                    <div style="position: absolute; width: 1px; height: 1px; background: #0ea5e9; border-radius: 50%; opacity: 0.24; left: 30%; top: 30%; animation: floating-stars 18s linear infinite 1s;"></div>
+                    <div style="position: absolute; width: 2px; height: 2px; background: #06b6d4; border-radius: 50%; opacity: 0.29; left: 50%; top: 15%; animation: floating-stars 22s linear infinite 3s;"></div>
+                    <div style="position: absolute; width: 1.5px; height: 1.5px; background: #0ea5e9; border-radius: 50%; opacity: 0.25; left: 70%; top: 25%; animation: floating-stars 19s linear infinite 2.5s;"></div>
+                    <div style="position: absolute; width: 1px; height: 1px; background: #06b6d4; border-radius: 50%; opacity: 0.28; left: 80%; top: 40%; animation: floating-stars 17s linear infinite 1.5s;"></div>
+                </div>
+
+                <!-- Loading content -->
+                <div class="space-y-8 relative z-10">
                     <div class="flex justify-center">
                         <div class="animate-spin-gentle">
-                            <svg class="w-16 h-16 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" opacity="0.2"></circle>
+                            <svg class="w-16 h-16 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.4));">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" opacity="0.3"></circle>
                                 <path d="M12 2a10 10 0 0 1 7.07 17.07M12 2a10 10 0 0 0 0 20" stroke="currentColor" stroke-width="2"></path>
                             </svg>
                         </div>
@@ -301,9 +323,9 @@ function showPreviewLoading() {
                         <h3 class="text-lg font-bold text-gray-800">Sputnik is thinking...</h3>
                         <p id="loadingStatus" class="text-sm text-gray-600">Generating your first draft</p>
                         <div class="flex justify-center gap-1 mt-4">
-                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
-                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
-                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.4s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
                         </div>
                     </div>
                 </div>
