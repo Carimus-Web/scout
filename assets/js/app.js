@@ -230,7 +230,7 @@ function addMessage(role, content, isError = false) {
     const msgDiv = document.createElement('div');
 
     // Build class list
-    let classes = 'flex items-start gap-3 animate-pulse-slow';
+    let classes = 'flex flex-col gap-3 animate-pulse-slow';
     let labelClasses =
         'flex-shrink-0 font-bold text-xs uppercase tracking-widest mt-1';
     let contentClasses =
@@ -238,18 +238,18 @@ function addMessage(role, content, isError = false) {
 
     // Role-specific styling
     if (role === 'assistant' && !isError) {
-        msgDiv.className = classes + ' justify-start';
-        labelClasses += ' text-cyan-600';
+        msgDiv.className = classes + ' justify-start items-start';
         contentClasses +=
-            ' bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 border-l-4 border-l-cyan-400 rounded-lg p-3 text-gray-800 shadow-md prose prose-sm max-w-none';
+            ' bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 border-l-4 border-l-cyan-400 rounded-lg p-3 text-gray-800 shadow-md prose prose-sm max-w-none ';
+        labelClasses += ' text-cyan-600';
 
         // Parse markdown for assistant messages
         content = parseMarkdown(content);
     } else if (role === 'user') {
-        msgDiv.className = classes + ' justify-end';
-        labelClasses += ' text-cyan-700 order-2 ml-3';
+        msgDiv.className = classes + ' justify-end items-end';
         contentClasses +=
-            ' order-1 bg-cyan-100/60 border border-cyan-300/50 rounded-lg p-3 text-gray-900 shadow-sm whitespace-pre-wrap word-break break-words';
+            ' order-1 bg-gray-100/60 border border-gray-300/50 rounded-lg p-3 text-gray-900 shadow-sm whitespace-pre-wrap word-break break-words';
+        labelClasses += ' text-cyan-700 order-2 ml-3';
 
         // Escape HTML and preserve line breaks for user messages
         content = escapeHtml(content).replace(/\n/g, '<br>');
@@ -260,10 +260,10 @@ function addMessage(role, content, isError = false) {
             '<a href="$&" target="_blank" class="text-cyan-600 font-semibold underline hover:text-cyan-700 break-all">$&</a>',
         );
     } else if (isError) {
-        msgDiv.className = classes + ' justify-start';
-        labelClasses += ' text-red-600';
+        msgDiv.className = classes + ' justify-start items-start';
         contentClasses +=
             ' bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 border-l-4 border-l-red-500 rounded-lg p-3 text-red-900 shadow-md';
+        labelClasses += ' text-red-600';
 
         // Escape HTML for error messages
         content = escapeHtml(content);
@@ -280,8 +280,8 @@ function addMessage(role, content, isError = false) {
     contentEl.className = contentClasses;
     contentEl.innerHTML = content;
 
-    msgDiv.appendChild(labelEl);
     msgDiv.appendChild(contentEl);
+    msgDiv.appendChild(labelEl);
     chatDiv.appendChild(msgDiv);
     chatDiv.scrollTop = chatDiv.scrollHeight;
 }
