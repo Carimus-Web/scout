@@ -7,11 +7,41 @@
  */
 function sputnik_build_prompt($messages, $allowed_blocks) {
     
+    // Get available media library images
+    require_once SPUTNIK_PATH . 'includes/media/placeholder.php';
+    $media_images = sputnik_get_media_library_images(20);
+    
+    error_log('DEBUG: Media library images fetched: ' . count($media_images) . ' images');
+    if (!empty($media_images)) {
+        error_log('DEBUG: First image: ' . json_encode($media_images[0]));
+    } else {
+        error_log('DEBUG: No images found in media library!');
+    }
+    
+    // Identify which blocks support images by checking for image-type fields
+    $blocks_with_images = [];
+    foreach ($allowed_blocks as $block) {
+        $has_image_field = false;
+        if (!empty($block['acf']) && !empty($block['acf']['fields'])) {
+            foreach ($block['acf']['fields'] as $field) {
+                $field_type = $field['type'] ?? '';
+                if (in_array($field_type, ['image', 'gallery', 'relationship'])) {
+                    $has_image_field = true;
+                    break;
+                }
+            }
+        }
+        if ($has_image_field) {
+            $blocks_with_images[] = $block['name'];
+        }
+    }
+    
     // Format block metadata for the AI to understand
     $blocks_description = "AVAILABLE BLOCKS (and ONLY these):\n\n";
     
     foreach ($allowed_blocks as $block) {
-        $blocks_description .= "### {$block['name']} - {$block['title']}\n";
+        $is_image_block = in_array($block['name'], $blocks_with_images);
+        $blocks_description .= "### {$block['name']} - {$block['title']}" . ($is_image_block ? " [SUPPORTS IMAGES]" : "") . "\n";
         $blocks_description .= "Description: {$block['description']}\n";
         
         // Include ACF field information if available
@@ -32,6 +62,12 @@ function sputnik_build_prompt($messages, $allowed_blocks) {
         
         $blocks_description .= "\n";
     }
+    
+    // Format available images for the AI
+    $images_description = "AVAILABLE MEDIA LIBRARY IMAGES:\n\n";
+    foreach ($media_images as $img) {
+        $images_description .= "- ID {$img['id']}: {$img['title']} (Alt: {$img['alt_text']})\n";
+    }
 
     return [
         [
@@ -46,17 +82,23 @@ function sputnik_build_prompt($messages, $allowed_blocks) {
             "6. If you don't have enough information, ask clarifying questions\n" .
             "7. Do NOT include emojis in any field values - keep content professional and text-only\n" .
             "8. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
+            "IMAGE HANDLING:\n" .
+            "- For blocks marked [SUPPORTS IMAGES], pick an image ID from the available media library that matches the content context\n" .
+            "- Use the image ID (not URL) in the JSON response\n" .
+            "- Pick images intelligently: e.g., for vehicle-related content, pick images with vehicles; for tech content, pick tech-related images\n" .
+            "- If no image is appropriate for a block, use image ID null or omit it\n\n" .
             "JSON FORMAT (return ONLY when ready to build):\n" .
             "{\n" .
             "  \"layout\": [\n" .
             "    {\n" .
             "      \"block\": \"carimus/block-name\",\n" .
             "      \"fields\": { \"field_name\": \"value\", \"another_field\": \"value\" },\n" .
-            "      \"image\": false\n" .
+            "      \"image\": IMAGE_ID_OR_NULL\n" .
             "    }\n" .
             "  ]\n" .
             "}\n\n" .
-            $blocks_description
+            $blocks_description . "\n" .
+            $images_description
         ],
         [
             "role" => "user",

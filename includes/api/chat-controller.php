@@ -66,6 +66,8 @@ function sputnik_chat_handler($request) {
             ];
         }
 
+        error_log('DEBUG: Claude response layout: ' . json_encode($ai['layout']));
+
         // If layout exists → create post
         if (!empty($ai['layout'])) {
 
