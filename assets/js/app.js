@@ -234,7 +234,7 @@ function addMessage(role, content, isError = false) {
     let labelClasses =
         'flex-shrink-0 font-bold text-xs uppercase tracking-widest mt-1';
     let contentClasses =
-        'flex-1 leading-relaxed text-xs break-words overflow-hidden';
+        'flex-1 leading-relaxed text-xs break-words overflow-hidden w-11/12';
 
     // Role-specific styling
     if (role === 'assistant' && !isError) {
