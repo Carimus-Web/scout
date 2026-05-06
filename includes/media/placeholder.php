@@ -60,11 +60,13 @@ function sputnik_get_media_library_images($limit = 20) {
  */
 function sputnik_attachment_id_to_acf_image($attachment_id) {
     if (!$attachment_id || !is_numeric($attachment_id)) {
+        error_log('DEBUG: attachment_id invalid: ' . json_encode($attachment_id));
         return null;
     }
     
     $image_url = wp_get_attachment_url($attachment_id);
     if (!$image_url) {
+        error_log('DEBUG: wp_get_attachment_url returned false for ID: ' . $attachment_id);
         return null;
     }
     
@@ -77,7 +79,7 @@ function sputnik_attachment_id_to_acf_image($attachment_id) {
     
     // Build standard ACF image array
     // This matches what ACF normally returns for image fields
-    return [
+    $result = [
         'ID' => (int)$attachment_id,
         'id' => (int)$attachment_id,
         'url' => $image_url,
@@ -87,4 +89,9 @@ function sputnik_attachment_id_to_acf_image($attachment_id) {
         'width' => $width,
         'height' => $height
     ];
+    
+    error_log('DEBUG: Conversion result for ID ' . $attachment_id . ': ' . json_encode($result));
+    error_log('DEBUG: Result has ID key? ' . (isset($result['ID']) ? 'YES (' . $result['ID'] . ')' : 'NO'));
+    
+    return $result;
 }
