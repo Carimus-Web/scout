@@ -11,13 +11,6 @@ function sputnik_build_prompt($messages, $allowed_blocks) {
     require_once SPUTNIK_PATH . 'includes/media/placeholder.php';
     $media_images = sputnik_get_media_library_images(20);
     
-    error_log('DEBUG: Media library images fetched: ' . count($media_images) . ' images');
-    if (!empty($media_images)) {
-        error_log('DEBUG: First image: ' . json_encode($media_images[0]));
-    } else {
-        error_log('DEBUG: No images found in media library!');
-    }
-    
     // Identify which blocks support images by checking for image-type fields
     $blocks_with_images = [];
     foreach ($allowed_blocks as $block) {

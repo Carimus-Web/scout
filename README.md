@@ -9,9 +9,11 @@ Sputnik is a WordPress plugin that uses AI to generate first drafts of pages usi
 - **Multi-Provider AI** – Works with Claude, OpenAI, Gemini, and more (choose what works best for you)
 - **Dynamic Block Discovery** – Automatically discovers and reads available blocks from the Carimus Backbone theme
 - **ACF Integration** – Understands ACF block structures and generates valid field data
+- **Media Library Integration** – AI intelligently selects images from your WordPress media library based on content context
 - **Post Type Selection** – Lock in your content type before starting (page, customer-story, post, resource, etc.)
 - **Smart Validation** – Rejects any blocks or fields outside the allowed set
 - **Draft-Only Creation** – Always saves as draft for human review and refinement
+- **Multi-Turn Refinement** – Continue editing and refining pages through multiple AI requests
 - **Conversational Interface** – Multi-turn chat allows AI to ask clarifying questions
 
 ## How It Works
@@ -234,6 +236,24 @@ Handles the creation of WordPress draft posts with the generated block content:
 - Populates ACF block attributes with generated field values
 - Uses `serialize_blocks()` to create post_content
 - Always sets `post_status: 'draft'` (never publishes)
+
+### Media Library Integration (`includes/media/placeholder.php`)
+
+Scans the WordPress media library and provides intelligent image selection:
+
+- **`sputnik_get_media_library_images($limit)`** – Fetches up to 20 media library images with full metadata (ID, URL, alt text, dimensions, title)
+- **`sputnik_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
+- AI receives media library context in the system prompt and selects images intelligently based on content context
+- For example: "vehicle-related" content triggers selection of images with vehicles
+- Images are stored with complete ACF metadata (ID, URL, alt text, width, height, caption)
+
+**How it works:**
+
+1. When generating a page, Sputnik fetches the 20 most recent images from your media library
+2. Image metadata is included in the AI prompt so Claude can reference them
+3. For blocks with image fields, Claude analyzes the content and selects appropriate image IDs
+4. Image IDs are converted to full ACF image arrays before being stored in blocks
+5. Blocks render with real images from your library instead of placeholders
 
 ## API
 

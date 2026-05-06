@@ -44,18 +44,6 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
     $system_content = $prompt[0]['content'];
     $user_content = $prompt[count($prompt) - 1]['content'];
     
-    // Log to see if images are in the system prompt
-    if (strpos($system_content, 'AVAILABLE MEDIA LIBRARY IMAGES') !== false) {
-        error_log('DEBUG: Image section found in system prompt');
-        // Find the images section
-        preg_match('/AVAILABLE MEDIA LIBRARY IMAGES:(.*?)(?=\n\n|$)/s', $system_content, $matches);
-        if (!empty($matches[1])) {
-            error_log('DEBUG: Images in prompt: ' . substr($matches[1], 0, 200));
-        }
-    } else {
-        error_log('DEBUG: WARNING - No AVAILABLE MEDIA LIBRARY IMAGES section in prompt!');
-    }
-    
     $api_key = sputnik_get_api_key('anthropic');
     if (!$api_key) {
         return ['error' => 'Anthropic API key not configured. Set it in Sputnik Settings.'];
