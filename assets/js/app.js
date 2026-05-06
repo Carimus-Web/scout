@@ -104,7 +104,7 @@ app.innerHTML = `
     <!-- Chat Phase -->
     <div id="chatPhase" class="flex flex-col flex-1 bg-transparent overflow-scroll z-10" style="display: none;">
       <div id="typeBadge" class="px-6 py-4 bg-gradient-to-r from-cyan-50/70 to-purple-50/50 border-b border-cyan-200/30 text-xs text-gray-600 font-bold uppercase tracking-widest bg-white/60 backdrop-blur-sm"></div>
-      <div id="chat" class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-4 bg-transparent"></div>
+      <div id="chat" class="flex-1 overflow-y-auto px-6 py-6 flex flex-col gap-8 bg-transparent"></div>
       <div class="px-6 py-5 border-t border-cyan-200/30 bg-white/70 backdrop-blur-sm z-10">
         <div class="flex gap-3 items-end">
           <div class="flex-1 relative">
@@ -230,7 +230,7 @@ function addMessage(role, content, isError = false) {
     const msgDiv = document.createElement('div');
 
     // Build class list
-    let classes = 'flex flex-col gap-3 animate-pulse-slow';
+    let classes = 'flex flex-col gap-1 animate-pulse-slow';
     let labelClasses =
         'flex-shrink-0 font-bold text-xs uppercase tracking-widest mt-1';
     let contentClasses =
