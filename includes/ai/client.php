@@ -54,7 +54,7 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
         ],
         'body' => json_encode([
             'model' => 'claude-sonnet-4-6',
-            'max_tokens' => 2048,
+            'max_tokens' => 4096,  // Increased from 2048 to handle full page layouts
             'messages' => [
                 [
                     'role' => 'user',
@@ -112,7 +112,8 @@ function sputnik_ai_openai($messages, $allowed_blocks) {
         'body' => json_encode([
             'model' => 'gpt-4-turbo',
             'messages' => $prompt,
-            'temperature' => 0.7
+            'temperature' => 0.7,
+            'max_tokens' => 4096  // Allow full page layout responses
         ]),
         'timeout' => 60
     ]);
@@ -165,6 +166,9 @@ function sputnik_ai_google($messages, $allowed_blocks) {
                         'text' => $prompt[0]['content']
                     ]
                 ]
+            ],
+            'generationConfig' => [
+                'maxOutputTokens' => 4096
             ]
         ]),
         'timeout' => 60

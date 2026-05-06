@@ -37,3 +37,33 @@ function sputnik_create_post($postType, $layout) {
     error_log('Post content updated successfully');
     return $post_id;
 }
+
+function sputnik_update_post($post_id, $layout) {
+    error_log('sputnik_update_post called with post_id: ' . $post_id);
+
+    // Verify the post exists
+    $post = get_post($post_id);
+    if (!$post) {
+        error_log('Post not found with ID: ' . $post_id);
+        return new WP_Error('post_not_found', 'Post not found');
+    }
+
+    error_log('Post found: ' . $post->post_title);
+
+    $content = sputnik_build_blocks($layout);
+    error_log('Blocks built, content length: ' . strlen($content));
+    error_log('Full serialized blocks: ' . $content);
+
+    $updated = wp_update_post([
+        'ID' => $post_id,
+        'post_content' => $content
+    ]);
+
+    if (is_wp_error($updated)) {
+        error_log('wp_update_post failed: ' . $updated->get_error_message());
+        return $updated;
+    }
+
+    error_log('Post content updated successfully');
+    return $post_id;
+}

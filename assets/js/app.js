@@ -73,6 +73,7 @@ const app = document.getElementById('sputnik-app');
 let messages = [];
 let selectedPostType = null;
 let draftCreated = false;
+let currentPostId = null;
 let isLoading = false;
 
 app.innerHTML = `
@@ -274,12 +275,59 @@ function addMessage(role, content, isError = false) {
     chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-async function submitMessage() {
-    if (draftCreated) {
-        alert('Draft created! Preparing editor...');
-        return;
+// Helper to safely show loading overlay (works before and after iframe rendered)
+function showPreviewLoading() {
+    const previewDiv = document.getElementById('previewWindow');
+    if (!previewDiv) return;
+
+    // Check if loading element exists
+    let loadingEl = document.getElementById('previewLoading');
+
+    // If elements were replaced by iframe, recreate them
+    if (!loadingEl) {
+        previewDiv.innerHTML = `
+            <div id="previewIdle" style="display: none;" class="flex flex-col items-center justify-center gap-8 px-8 text-center z-10"></div>
+            <div id="previewLoading" class="flex flex-col items-center justify-center gap-8 z-10 rounded">
+                <div class="space-y-8">
+                    <div class="flex justify-center">
+                        <div class="animate-spin-gentle">
+                            <svg class="w-16 h-16 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1" opacity="0.2"></circle>
+                                <path d="M12 2a10 10 0 0 1 7.07 17.07M12 2a10 10 0 0 0 0 20" stroke="currentColor" stroke-width="2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-center space-y-2">
+                        <h3 class="text-lg font-bold text-gray-800">Sputnik is thinking...</h3>
+                        <p id="loadingStatus" class="text-sm text-gray-600">Generating your first draft</p>
+                        <div class="flex justify-center gap-1 mt-4">
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                            <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="previewError" style="display: none;" class="flex flex-col items-center justify-center gap-6 px-8 z-10"></div>
+        `;
+        loadingEl = document.getElementById('previewLoading');
     }
 
+    // Hide other states and show loading
+    const idle = document.getElementById('previewIdle');
+    const error = document.getElementById('previewError');
+    if (idle) idle.style.display = 'none';
+    if (error) error.style.display = 'none';
+    if (loadingEl) loadingEl.style.display = 'flex';
+}
+
+// Helper to safely hide loading state
+function hidePreviewLoading() {
+    const loadingEl = document.getElementById('previewLoading');
+    if (loadingEl) loadingEl.style.display = 'none';
+}
+
+async function submitMessage() {
     const input = document.getElementById('input');
     const text = input.value.trim();
 
@@ -297,11 +345,9 @@ async function submitMessage() {
     const originalText = sendBtn.textContent;
     sendBtn.textContent = '⏳';
 
-    // Show loading state
+    // Show loading state (safely handles both initial and refinement states)
     isLoading = true;
-    document.getElementById('previewIdle').style.display = 'none';
-    document.getElementById('previewError').style.display = 'none';
-    document.getElementById('previewLoading').style.display = 'flex';
+    showPreviewLoading();
 
     const res = await fetch(SPUTNIK.api, {
         method: 'POST',
@@ -326,10 +372,14 @@ async function submitMessage() {
             `Server error: HTTP ${res.status}. Please try again or check your configuration in Sputnik → Settings.`,
             true,
         );
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewError').style.display = 'flex';
-        document.getElementById('errorMessage').textContent =
-            `Server error: HTTP ${res.status}. Please check your settings.`;
+        hidePreviewLoading();
+        const errorEl = document.getElementById('previewError');
+        if (errorEl) {
+            errorEl.style.display = 'flex';
+            const errorMsg = document.getElementById('errorMessage');
+            if (errorMsg)
+                errorMsg.textContent = `Server error: HTTP ${res.status}. Please check your settings.`;
+        }
         input.value = '';
         return;
     }
@@ -343,10 +393,15 @@ async function submitMessage() {
             'Error parsing server response. Please check Sputnik Settings and try again.',
             true,
         );
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewError').style.display = 'flex';
-        document.getElementById('errorMessage').textContent =
-            'Error parsing server response. Please try again.';
+        hidePreviewLoading();
+        const errorEl = document.getElementById('previewError');
+        if (errorEl) {
+            errorEl.style.display = 'flex';
+            const errorMsg = document.getElementById('errorMessage');
+            if (errorMsg)
+                errorMsg.textContent =
+                    'Error parsing server response. Please try again.';
+        }
         input.value = '';
         return;
     }
@@ -371,10 +426,15 @@ async function submitMessage() {
         }
 
         addMessage('assistant', errorMessage, true);
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewError').style.display = 'flex';
-        document.getElementById('errorMessage').textContent =
-            data?.error || 'An error occurred. Please try again.';
+        hidePreviewLoading();
+        const errorEl = document.getElementById('previewError');
+        if (errorEl) {
+            errorEl.style.display = 'flex';
+            const errorMsg = document.getElementById('errorMessage');
+            if (errorMsg)
+                errorMsg.textContent =
+                    data?.error || 'An error occurred. Please try again.';
+        }
         input.value = '';
         return;
     }
@@ -385,7 +445,6 @@ async function submitMessage() {
 
         // Check if this is a draft completion (backend already created page)
         if (data.complete && data.edit_url) {
-            console.log('Backend created page with edit_url:', data.edit_url);
             addMessage(
                 'assistant',
                 '✓ Draft page created! Opening in the editor now...',
@@ -406,23 +465,22 @@ async function submitMessage() {
         let layoutData = null;
 
         try {
-            // Strip markdown code blocks - handle various formats:
-            // - Triple backticks: ```json ... ```
-            // - Single backticks: `json ... `
-            // - No backticks
-            let cleanContent = replyContent
-                .trim()
-                .replace(/^```+\s*(?:json|javascript)?\s*\n?/i, '') // Remove opening triple backticks with optional language
-                .replace(/^`+\s*(?:json|javascript)?\s*\n?/i, '') // Remove opening single backticks with optional language
-                .replace(/\n?```+\s*$/i, '') // Remove closing triple backticks
-                .replace(/\n?`+\s*$/i, '') // Remove closing single backticks
-                .trim();
+            let cleanContent = replyContent.trim();
 
-            console.log('Cleaned content length:', cleanContent.length);
-            console.log(
-                'Cleaned content preview:',
-                cleanContent.substring(0, 100),
-            );
+            // Remove markdown code fence markers (```json ... ```)
+            cleanContent = cleanContent.replace(/^```[\w]*\n?/i, ''); // Remove opening ```json or ```
+            cleanContent = cleanContent.replace(/\n?```$/i, ''); // Remove closing ```
+
+            // Also handle inline backticks
+            cleanContent = cleanContent.replace(/^`[\w]*\n?/i, ''); // Remove opening backtick
+            cleanContent = cleanContent.replace(/\n?`$/i, ''); // Remove closing backtick
+
+            cleanContent = cleanContent.trim();
+
+            // Check if content looks like JSON (starts with { or [)
+            if (!cleanContent.match(/^\s*[\{\[]/)) {
+                throw new Error('Not JSON format');
+            }
 
             layoutData = JSON.parse(cleanContent);
             if (
@@ -431,10 +489,10 @@ async function submitMessage() {
                 Array.isArray(layoutData.layout)
             ) {
                 isLayoutJson = true;
+            } else {
                 console.log(
-                    'Detected layout JSON with',
-                    layoutData.layout.length,
-                    'blocks',
+                    'Parsed JSON but no layout array found:',
+                    Object.keys(layoutData || {}),
                 );
             }
         } catch (e) {
@@ -447,32 +505,25 @@ async function submitMessage() {
         }
 
         if (isLayoutJson) {
-            // Layout detected - create page and show preview
-            addMessage('assistant', '✓ Creating your page...');
+            // Show loading state for page creation
+            showPreviewLoading();
+            const statusEl = document.getElementById('loadingStatus');
+            if (statusEl) statusEl.textContent = 'Creating your page...';
 
-            // Create the post with the layout
-            document.getElementById('previewLoading').style.display = 'flex';
-            document.getElementById('loadingStatus').textContent =
-                'Creating your page...';
-
-            console.log(
-                'Calling createPageWithBlocks with',
-                layoutData.layout.length,
-                'blocks',
-            );
             createPageWithBlocks(layoutData.layout, selectedPostType);
         } else {
             // Regular message response
             addMessage('assistant', data.reply.content);
-            document.getElementById('previewLoading').style.display = 'none';
-            document.getElementById('previewIdle').style.display = 'flex';
+            hidePreviewLoading();
+            const idle = document.getElementById('previewIdle');
+            if (idle) idle.style.display = 'flex';
         }
 
         input.value = '';
     }
 }
 
-// Create WordPress page with blocks from layout JSON
+// Create or update WordPress page with blocks from layout JSON
 async function createPageWithBlocks(layout, postType) {
     try {
         const endpoint = SPUTNIK.api.replace('/chat', '/create-page');
@@ -485,6 +536,7 @@ async function createPageWithBlocks(layout, postType) {
             body: JSON.stringify({
                 layout: layout,
                 postType: postType,
+                post_id: currentPostId, // Send existing post ID if refining
             }),
         });
 
@@ -499,31 +551,38 @@ async function createPageWithBlocks(layout, postType) {
                 `Error creating page: ${result.error}`,
                 true,
             );
-            document.getElementById('previewLoading').style.display = 'none';
-            document.getElementById('previewError').style.display = 'flex';
-            document.getElementById('errorMessage').textContent = result.error;
+            hidePreviewLoading();
+            const errorEl = document.getElementById('previewError');
+            if (errorEl) {
+                errorEl.style.display = 'flex';
+                const errorMsg = document.getElementById('errorMessage');
+                if (errorMsg) errorMsg.textContent = result.error;
+            }
             return;
         }
 
-        // Page created successfully - show preview in iframe
+        // Page created successfully - store the post ID for future refinements
         draftCreated = true;
+        currentPostId = result.post_id;
 
         // Show preview instead of redirecting
         renderPreviewIframe(result.post_url, result.edit_url);
 
-        document.getElementById('previewLoading').style.display = 'none';
+        hidePreviewLoading();
     } catch (error) {
         addMessage('assistant', `Error creating page: ${error.message}`, true);
-        document.getElementById('previewLoading').style.display = 'none';
-        document.getElementById('previewError').style.display = 'flex';
-        document.getElementById('errorMessage').textContent = error.message;
+        hidePreviewLoading();
+        const errorEl = document.getElementById('previewError');
+        if (errorEl) {
+            errorEl.style.display = 'flex';
+            const errorMsg = document.getElementById('errorMessage');
+            if (errorMsg) errorMsg.textContent = error.message;
+        }
     }
 }
 
 // Render preview using iframe of the actual draft post
 function renderPreviewIframe(postUrl, editUrl) {
-    console.log('Rendering preview iframe for:', postUrl, 'Edit URL:', editUrl);
-
     const previewDiv = document.getElementById('previewWindow');
     const previewIdle = document.getElementById('previewIdle');
 

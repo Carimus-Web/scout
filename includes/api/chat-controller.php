@@ -143,6 +143,7 @@ function sputnik_create_page_handler($request) {
         $params = $request->get_json_params();
         $layout = isset($params['layout']) ? $params['layout'] : null;
         $postType = isset($params['postType']) ? $params['postType'] : null;
+        $post_id = isset($params['post_id']) ? intval($params['post_id']) : null;
 
         if (empty($layout) || empty($postType)) {
             return [
@@ -150,17 +151,25 @@ function sputnik_create_page_handler($request) {
             ];
         }
 
-        error_log('Creating page with post type: ' . $postType);
-        $post_id = sputnik_create_post($postType, $layout);
+        if ($post_id) {
+            // Update existing post
+            error_log('Updating existing post ID: ' . $post_id);
+            $result = sputnik_update_post($post_id, $layout);
+        } else {
+            // Create new post
+            error_log('Creating new page with post type: ' . $postType);
+            $result = sputnik_create_post($postType, $layout);
+        }
 
-        if (is_wp_error($post_id)) {
-            error_log('Failed to create post: ' . $post_id->get_error_message());
+        if (is_wp_error($result)) {
+            error_log('Failed to create/update post: ' . $result->get_error_message());
             return [
-                'error' => 'Failed to create post: ' . $post_id->get_error_message()
+                'error' => 'Failed to create/update post: ' . $result->get_error_message()
             ];
         }
 
-        error_log('Page created with ID: ' . $post_id);
+        $post_id = $result;
+        error_log('Page created/updated with ID: ' . $post_id);
         
         // Get the URLs - these can be null if post doesn't exist
         $edit_url = get_edit_post_link($post_id, 'raw');
