@@ -2,24 +2,24 @@
 
 add_action('admin_enqueue_scripts', function ($hook) {
 
-    if ($hook !== 'toplevel_page_sputnik') return;
+    if ($hook !== 'toplevel_page_scout') return;
 
     wp_enqueue_script(
-        'sputnik-app',
-        SPUTNIK_URL . 'assets/js/app.js',
+        'scout-app',
+        SCOUT_URL . 'assets/js/app.js',
         [],
         '1.0',
         true
     );
 
-    wp_localize_script('sputnik-app', 'SPUTNIK', [
-        'api' => '/wp-json/sputnik/v1/chat',
-        'postTypes' => sputnik_get_post_types(),
-        'settingsUrl' => admin_url('admin.php?page=sputnik-settings')
+    wp_localize_script('scout-app', 'SCOUT', [
+        'api' => '/wp-json/scout/v1/chat',
+        'postTypes' => scout_get_post_types(),
+        'settingsUrl' => admin_url('admin.php?page=scout-settings')
     ]);
 });
 
-function sputnik_get_post_types() {
+function scout_get_post_types() {
     $types = get_post_types(['public' => true], 'objects');
 
     $output = [];

@@ -1,6 +1,6 @@
 <?php
 
-function sputnik_enqueue_admin_styles() {
+function scout_enqueue_admin_styles() {
     // Enqueue Tailwind CSS via CDN (it's a JavaScript file that generates CSS)
     wp_enqueue_script(
         'tailwindcss',
@@ -18,17 +18,17 @@ function sputnik_enqueue_admin_styles() {
         null
     );
 
-    // Enqueue custom Sputnik styles
+    // Enqueue custom Scout styles
     wp_enqueue_style(
-        'sputnik-admin',
-        SPUTNIK_URL . 'assets/css/admin.css',
+        'scout-admin',
+        SCOUT_URL . 'assets/css/admin.css',
         ['poppins-font'],
-        SPUTNIK_VERSION
+        SCOUT_VERSION
     );
 }
 
 add_action('admin_enqueue_scripts', function() {
-    if (isset($_GET['page']) && strpos($_GET['page'], 'sputnik') === 0) {
-        sputnik_enqueue_admin_styles();
+    if (isset($_GET['page']) && strpos($_GET['page'], 'scout') === 0) {
+        scout_enqueue_admin_styles();
     }
 });

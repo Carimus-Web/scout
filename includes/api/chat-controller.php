@@ -1,27 +1,27 @@
 <?php
 
-require_once SPUTNIK_PATH . 'includes/ai/client.php';
-require_once SPUTNIK_PATH . 'includes/admin/settings-config.php';
-require_once SPUTNIK_PATH . 'includes/blocks/allowed.php';
-require_once SPUTNIK_PATH . 'includes/blocks/validator.php';
-require_once SPUTNIK_PATH . 'includes/content/post-creator.php';
+require_once SCOUT_PATH . 'includes/ai/client.php';
+require_once SCOUT_PATH . 'includes/admin/settings-config.php';
+require_once SCOUT_PATH . 'includes/blocks/allowed.php';
+require_once SCOUT_PATH . 'includes/blocks/validator.php';
+require_once SCOUT_PATH . 'includes/content/post-creator.php';
 
-function sputnik_chat_handler($request) {
+function scout_chat_handler($request) {
     try {
         // Log the request for debugging
-        error_log('Sputnik Chat Handler Called');
+        error_log('Scout Chat Handler Called');
         
         // Check API configuration first
         error_log('Getting AI provider...');
-        $provider = sputnik_get_ai_provider();
+        $provider = scout_get_ai_provider();
         error_log('Provider: ' . $provider);
         
-        $api_key = sputnik_get_api_key($provider);
+        $api_key = scout_get_api_key($provider);
         error_log('API Key: ' . (empty($api_key) ? 'empty' : 'set'));
 
         if (empty($api_key)) {
             return [
-                'error' => 'No AI provider configured. Go to Sputnik → Settings to add your API key.'
+                'error' => 'No AI provider configured. Go to Scout → Settings to add your API key.'
             ];
         }
 
@@ -40,7 +40,7 @@ function sputnik_chat_handler($request) {
             ];
         }
 
-        $allowed_blocks = sputnik_get_allowed_blocks($postType);
+        $allowed_blocks = scout_get_allowed_blocks($postType);
 
         if (empty($allowed_blocks)) {
             error_log('No blocks found. get_block_types exists: ' . (function_exists('get_block_types') ? 'yes' : 'no'));
@@ -57,7 +57,7 @@ function sputnik_chat_handler($request) {
             ];
         }
 
-        $ai = sputnik_ai_chat($messages, $allowed_blocks);
+        $ai = scout_ai_chat($messages, $allowed_blocks);
 
         // Check for errors from AI provider
         if (!empty($ai['error'])) {
@@ -69,7 +69,7 @@ function sputnik_chat_handler($request) {
         // If layout exists → create post
         if (!empty($ai['layout'])) {
 
-            if (!sputnik_validate_layout($ai['layout'], $allowed_blocks)) {
+            if (!scout_validate_layout($ai['layout'], $allowed_blocks)) {
                 return [
                     'reply' => [
                         'role' => 'assistant',
@@ -79,7 +79,7 @@ function sputnik_chat_handler($request) {
                 ];
             }
 
-            $post_id = sputnik_create_post($postType, $ai['layout']);
+            $post_id = scout_create_post($postType, $ai['layout']);
 
             if (is_wp_error($post_id)) {
                 return [
@@ -136,9 +136,9 @@ function sputnik_chat_handler($request) {
  * Handler for creating a page with blocks
  * Called when frontend needs to create a draft page from layout JSON
  */
-function sputnik_create_page_handler($request) {
+function scout_create_page_handler($request) {
     try {
-        error_log('Sputnik Create Page Handler Called');
+        error_log('Scout Create Page Handler Called');
         
         $params = $request->get_json_params();
         $layout = isset($params['layout']) ? $params['layout'] : null;
@@ -154,11 +154,11 @@ function sputnik_create_page_handler($request) {
         if ($post_id) {
             // Update existing post
             error_log('Updating existing post ID: ' . $post_id);
-            $result = sputnik_update_post($post_id, $layout);
+            $result = scout_update_post($post_id, $layout);
         } else {
             // Create new post
             error_log('Creating new page with post type: ' . $postType);
-            $result = sputnik_create_post($postType, $layout);
+            $result = scout_create_post($postType, $layout);
         }
 
         if (is_wp_error($result)) {

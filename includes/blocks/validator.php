@@ -4,7 +4,7 @@
  * Strictly validate that generated layout uses ONLY allowed blocks and valid fields.
  * No exceptions. No invented blocks. No invented fields.
  */
-function sputnik_validate_layout($layout, $allowed_blocks) {
+function scout_validate_layout($layout, $allowed_blocks) {
 
     if (!is_array($layout) || empty($layout)) {
         return false;
@@ -36,7 +36,7 @@ function sputnik_validate_layout($layout, $allowed_blocks) {
         
         // Check block exists in allowed list
         if (!in_array($block['block'], $allowed_block_names, true)) {
-            error_log("Sputnik validation failed: Unknown block '{$block['block']}'");
+            error_log("Scout validation failed: Unknown block '{$block['block']}'");
             return false;
         }
 
@@ -44,7 +44,7 @@ function sputnik_validate_layout($layout, $allowed_blocks) {
         if (!empty($block['fields']) && is_array($block['fields'])) {
             foreach ($block['fields'] as $key => $val) {
                 if (!in_array($key, $allowed_map[$block['block']], true)) {
-                    error_log("Sputnik validation failed: Invalid field '{$key}' for block '{$block['block']}'");
+                    error_log("Scout validation failed: Invalid field '{$key}' for block '{$block['block']}'");
                     return false;
                 }
             }

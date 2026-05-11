@@ -1,7 +1,7 @@
-/* Sputnik Styles - Custom utilities and animations */
+/* Scout Styles - Custom utilities and animations */
 
 /* Font Configuration */
-#sputnik-app {
+#scout-app {
     font-family:
         'Poppins',
         -apple-system,
@@ -10,7 +10,7 @@
         sans-serif;
 }
 
-#sputnik-app * {
+#scout-app * {
     font-family:
         'Poppins',
         -apple-system,

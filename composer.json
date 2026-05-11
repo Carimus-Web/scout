@@ -1,5 +1,5 @@
 {
-    "name": "carimus/sputnik",
+    "name": "carimus/scout",
     "description": "AI-powered content draft generator for WordPress using Carimus Backbone theme blocks",
     "version": "1.0.0",
     "type": "wordpress-plugin",
@@ -32,5 +32,5 @@
         "openai",
         "block-editor"
     ],
-    "homepage": "https://github.com/Carimus-Web/sputnik"
+    "homepage": "https://github.com/Carimus-Web/scout"
 }

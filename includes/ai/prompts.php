@@ -5,11 +5,11 @@
  * The AI acts as a CONTENT WRITER only, not a designer.
  * It must use ONLY the allowed blocks, no exceptions.
  */
-function sputnik_build_prompt($messages, $allowed_blocks) {
+function scout_build_prompt($messages, $allowed_blocks) {
     
     // Get available media library images
-    require_once SPUTNIK_PATH . 'includes/media/placeholder.php';
-    $media_images = sputnik_get_media_library_images(20);
+    require_once SCOUT_PATH . 'includes/media/placeholder.php';
+    $media_images = scout_get_media_library_images(20);
     
     // Identify which blocks support images by checking for image-type fields
     $blocks_with_images = [];

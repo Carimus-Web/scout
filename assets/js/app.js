@@ -68,7 +68,7 @@ function parseMarkdown(text) {
     return text;
 }
 
-const app = document.getElementById('sputnik-app');
+const app = document.getElementById('scout-app');
 
 let messages = [];
 let selectedPostType = null;
@@ -82,7 +82,7 @@ app.innerHTML = `
     <!-- Header -->
     <div class="text-center px-6 py-4 border-b border-cyan-200/50 bg-white/70 backdrop-blur-sm z-10">
       <h2 class="text-4xl font-bold mb-0">
-        <span class="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 bg-clip-text text-transparent">Sputnik</span>
+        <span class="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 bg-clip-text text-transparent">Scout</span>
       </h2>
     </div>
     
@@ -90,7 +90,7 @@ app.innerHTML = `
     <div id="selectorPhase" class="flex flex-col items-center justify-center flex-1 px-3 py-10 z-10">
       <label for="postType" class="block mb-2 font-semibold text-gray-800 text-md">Select Content Type:</label>
       <div class="max-w-md text-center mb-8 text-gray-500 text-xs leading-relaxed">
-        Choose the type of page you want to create. Sputnik will use AI to generate a first draft using your site's available content blocks. From there you will be able to customize and refine the content in the WordPress editor.
+        Choose the type of page you want to create. Scout will use AI to generate a first draft using your site's available content blocks. From there you will be able to customize and refine the content in the WordPress editor.
       </div>
       <select id="postType" class="!w-full !max-w-md !px-4 !py-3 !mb-6 !border-1 !border-gray-100 !rounded-xl !text-md !bg-white !appearance-none !text-gray-900 !cursor-pointer !transition-all !shadow-md !hover:border-cyan-400 !hover:shadow-lg !focus:border-cyan-400 !focus:shadow-xl !focus:outline-none">
         <option value="">Choose a content type...</option>
@@ -128,7 +128,7 @@ app.innerHTML = `
       </div>
       <div class="space-y-4 max-w-md">
         <h3 class="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">Ready to Create</h3>
-        <p class="text-gray-600 leading-relaxed text-sm">Describe your content in the chat panel and Sputnik will use AI to generate a first draft using your site's available blocks.</p>
+        <p class="text-gray-600 leading-relaxed text-sm">Describe your content in the chat panel and Scout will use AI to generate a first draft using your site's available blocks.</p>
         <div class="pt-4 space-y-3">
           <p class="text-xs text-gray-500 font-semibold uppercase tracking-widest">✨ Features</p>
           <ul class="text-xs text-gray-700 space-y-2">
@@ -164,7 +164,7 @@ app.innerHTML = `
           </div>
         </div>
         <div class="text-center space-y-2">
-          <h3 class="text-lg font-bold text-gray-800">Sputnik is thinking...</h3>
+          <h3 class="text-lg font-bold text-gray-800">Scout is thinking...</h3>
           <p id="loadingStatus" class="text-sm text-gray-600">Generating your first draft</p>
           <div class="flex justify-center gap-1 mt-4">
             <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
@@ -196,7 +196,7 @@ app.innerHTML = `
 
 const select = document.getElementById('postType');
 
-SPUTNIK.postTypes.forEach((pt) => {
+SCOUT.postTypes.forEach((pt) => {
     const opt = document.createElement('option');
     opt.value = pt.value;
     opt.textContent = pt.label;
@@ -270,7 +270,7 @@ function addMessage(role, content, isError = false) {
     }
 
     // Create label
-    const label = role === 'assistant' ? 'Sputnik' : 'You';
+    const label = role === 'assistant' ? 'Scout' : 'You';
     const labelEl = document.createElement('strong');
     labelEl.className = labelClasses;
     labelEl.textContent = label;
@@ -320,7 +320,7 @@ function showPreviewLoading() {
                         </div>
                     </div>
                     <div class="text-center space-y-2">
-                        <h3 class="text-lg font-bold text-gray-800">Sputnik is thinking...</h3>
+                        <h3 class="text-lg font-bold text-gray-800">Scout is thinking...</h3>
                         <p id="loadingStatus" class="text-sm text-gray-600">Generating your first draft</p>
                         <div class="flex justify-center gap-1 mt-4">
                             <div class="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style="animation-delay: 0s; box-shadow: 0 0 10px rgba(34, 211, 238, 0.66);"></div>
@@ -371,7 +371,7 @@ async function submitMessage() {
     isLoading = true;
     showPreviewLoading();
 
-    const res = await fetch(SPUTNIK.api, {
+    const res = await fetch(SCOUT.api, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -391,7 +391,7 @@ async function submitMessage() {
     if (!res.ok) {
         addMessage(
             'assistant',
-            `Server error: HTTP ${res.status}. Please try again or check your configuration in Sputnik → Settings.`,
+            `Server error: HTTP ${res.status}. Please try again or check your configuration in Scout → Settings.`,
             true,
         );
         hidePreviewLoading();
@@ -412,7 +412,7 @@ async function submitMessage() {
     } catch (e) {
         addMessage(
             'assistant',
-            'Error parsing server response. Please check Sputnik Settings and try again.',
+            'Error parsing server response. Please check Scout Settings and try again.',
             true,
         );
         hidePreviewLoading();
@@ -440,8 +440,8 @@ async function submitMessage() {
         ) {
             errorMessage +=
                 '<br><br><em class="block mt-3 italic text-red-700 text-xs">💡 <strong class="font-semibold">Tip:</strong> Go to <a href="' +
-                SPUTNIK.settingsUrl +
-                '" target="_blank" class="text-cyan-600 font-bold underline hover:text-cyan-700"><strong class="font-bold">Sputnik → Settings</strong></a> to configure your AI provider and API key.</em>';
+                SCOUT.settingsUrl +
+                '" target="_blank" class="text-cyan-600 font-bold underline hover:text-cyan-700"><strong class="font-bold">Scout → Settings</strong></a> to configure your AI provider and API key.</em>';
         } else if (errorMessage.includes('theme configuration')) {
             errorMessage +=
                 '<br><br><em class="block mt-3 italic text-red-700 text-xs">💡 <strong class="font-semibold">Tip:</strong> Make sure the Carimus Backbone theme is active and properly configured.</em>';
@@ -548,7 +548,7 @@ async function submitMessage() {
 // Create or update WordPress page with blocks from layout JSON
 async function createPageWithBlocks(layout, postType) {
     try {
-        const endpoint = SPUTNIK.api.replace('/chat', '/create-page');
+        const endpoint = SCOUT.api.replace('/chat', '/create-page');
 
         const response = await fetch(endpoint, {
             method: 'POST',

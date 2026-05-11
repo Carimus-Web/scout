@@ -1,22 +1,22 @@
 <?php
 
 /**
- * Render the Sputnik settings page
+ * Render the Scout settings page
  */
-function sputnik_render_settings_page() {
+function scout_render_settings_page() {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized');
     }
     ?>
     <div class="wrap">
-        <h1>Sputnik Settings</h1>
+        <h1>Scout Settings</h1>
         <p>Configure your AI provider and API key for content generation.</p>
         <hr style="margin: 20px 0;"/>
         
         <form action="options.php" method="POST">
             <?php
-            settings_fields('sputnik_settings');
-            do_settings_sections('sputnik_settings');
+            settings_fields('scout_settings');
+            do_settings_sections('scout_settings');
             submit_button();
             ?>
         </form>

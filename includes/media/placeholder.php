@@ -3,7 +3,7 @@
 /**
  * Get a single random image from media library for fallback
  */
-function sputnik_get_placeholder_image() {
+function scout_get_placeholder_image() {
 
     $images = get_posts([
         'post_type' => 'attachment',
@@ -22,7 +22,7 @@ function sputnik_get_placeholder_image() {
  * @param int $limit Number of images to retrieve (default: 20)
  * @return array Array of image objects with id, url, alt_text, title
  */
-function sputnik_get_media_library_images($limit = 20) {
+function scout_get_media_library_images($limit = 20) {
     
     $images = get_posts([
         'post_type' => 'attachment',
@@ -58,7 +58,7 @@ function sputnik_get_media_library_images($limit = 20) {
  * @param int $attachment_id
  * @return array|null Array with ID, url, alt, width, height keys or null if invalid
  */
-function sputnik_attachment_id_to_acf_image($attachment_id) {
+function scout_attachment_id_to_acf_image($attachment_id) {
     if (!$attachment_id || !is_numeric($attachment_id)) {
         return null;
     }

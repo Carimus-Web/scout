@@ -1,8 +1,8 @@
 <?php
 
-require_once SPUTNIK_PATH . 'includes/media/placeholder.php';
+require_once SCOUT_PATH . 'includes/media/placeholder.php';
 
-function sputnik_build_blocks($layout) {
+function scout_build_blocks($layout) {
 
     $blocks = [];
     $totalBlocks = count($layout);
@@ -18,14 +18,14 @@ function sputnik_build_blocks($layout) {
         if (isset($block['image'])) {
             if (is_numeric($block['image']) && $block['image'] > 0) {
                 // Convert attachment ID to full ACF image array
-                $image_array = sputnik_attachment_id_to_acf_image($block['image']);
+                $image_array = scout_attachment_id_to_acf_image($block['image']);
                 if ($image_array) {
                     $fields['image'] = $image_array;
                 }
             } elseif (!empty($block['image'])) {
                 // Fallback: pick random image if image is just true
-                $random_id = sputnik_get_placeholder_image();
-                $image_array = sputnik_attachment_id_to_acf_image($random_id);
+                $random_id = scout_get_placeholder_image();
+                $image_array = scout_attachment_id_to_acf_image($random_id);
                 if ($image_array) {
                     $fields['image'] = $image_array;
                 }

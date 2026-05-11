@@ -9,24 +9,24 @@
  * - google (Gemini)
  * 
  * Configuration sources (checked in order):
- * 1. WordPress Settings (Sputnik > Settings)
- * 2. Environment variables (SPUTNIK_AI_PROVIDER, ANTHROPIC_API_KEY, etc)
+ * 1. WordPress Settings (Scout > Settings)
+ * 2. Environment variables (SCOUT_AI_PROVIDER, ANTHROPIC_API_KEY, etc)
  */
 
-function sputnik_ai_chat($messages, $allowed_blocks) {
+function scout_ai_chat($messages, $allowed_blocks) {
     
-    $provider = sputnik_get_ai_provider();
+    $provider = scout_get_ai_provider();
     
     switch ($provider) {
         case 'anthropic':
-            return sputnik_ai_anthropic($messages, $allowed_blocks);
+            return scout_ai_anthropic($messages, $allowed_blocks);
         case 'openai':
-            return sputnik_ai_openai($messages, $allowed_blocks);
+            return scout_ai_openai($messages, $allowed_blocks);
         case 'google':
-            return sputnik_ai_google($messages, $allowed_blocks);
+            return scout_ai_google($messages, $allowed_blocks);
         default:
             return [
-                'error' => "Unknown AI provider: {$provider}. Configure in Sputnik Settings."
+                'error' => "Unknown AI provider: {$provider}. Configure in Scout Settings."
             ];
     }
 }
@@ -35,18 +35,18 @@ function sputnik_ai_chat($messages, $allowed_blocks) {
  * Anthropic Claude API
  * RECOMMENDED - Best for structured JSON generation with constraints
  */
-function sputnik_ai_anthropic($messages, $allowed_blocks) {
+function scout_ai_anthropic($messages, $allowed_blocks) {
     
-    require_once SPUTNIK_PATH . 'includes/ai/prompts.php';
+    require_once SCOUT_PATH . 'includes/ai/prompts.php';
     
-    $prompt = sputnik_build_prompt($messages, $allowed_blocks);
+    $prompt = scout_build_prompt($messages, $allowed_blocks);
     
     $system_content = $prompt[0]['content'];
     $user_content = $prompt[count($prompt) - 1]['content'];
     
-    $api_key = sputnik_get_api_key('anthropic');
+    $api_key = scout_get_api_key('anthropic');
     if (!$api_key) {
-        return ['error' => 'Anthropic API key not configured. Set it in Sputnik Settings.'];
+        return ['error' => 'Anthropic API key not configured. Set it in Scout Settings.'];
     }
     
     $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
@@ -96,15 +96,15 @@ function sputnik_ai_anthropic($messages, $allowed_blocks) {
 /**
  * OpenAI GPT API
  */
-function sputnik_ai_openai($messages, $allowed_blocks) {
+function scout_ai_openai($messages, $allowed_blocks) {
     
-    require_once SPUTNIK_PATH . 'includes/ai/prompts.php';
+    require_once SCOUT_PATH . 'includes/ai/prompts.php';
     
-    $prompt = sputnik_build_prompt($messages, $allowed_blocks);
+    $prompt = scout_build_prompt($messages, $allowed_blocks);
     
-    $api_key = sputnik_get_api_key('openai');
+    $api_key = scout_get_api_key('openai');
     if (!$api_key) {
-        return ['error' => 'OpenAI API key not configured. Set it in Sputnik Settings.'];
+        return ['error' => 'OpenAI API key not configured. Set it in Scout Settings.'];
     }
     
     $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
@@ -137,15 +137,15 @@ function sputnik_ai_openai($messages, $allowed_blocks) {
 /**
  * Google Gemini API
  */
-function sputnik_ai_google($messages, $allowed_blocks) {
+function scout_ai_google($messages, $allowed_blocks) {
     
-    require_once SPUTNIK_PATH . 'includes/ai/prompts.php';
+    require_once SCOUT_PATH . 'includes/ai/prompts.php';
     
-    $prompt = sputnik_build_prompt($messages, $allowed_blocks);
+    $prompt = scout_build_prompt($messages, $allowed_blocks);
     
-    $api_key = sputnik_get_api_key('google');
+    $api_key = scout_get_api_key('google');
     if (!$api_key) {
-        return ['error' => 'Google API key not configured. Set it in Sputnik Settings.'];
+        return ['error' => 'Google API key not configured. Set it in Scout Settings.'];
     }
     
     $response = wp_remote_post('https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=' . $api_key, [

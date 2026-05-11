@@ -1,61 +1,61 @@
 <?php
 
 /**
- * Register settings for Sputnik AI configuration
+ * Register settings for Scout AI configuration
  */
-function sputnik_register_settings() {
-    register_setting('sputnik_settings', 'sputnik_ai_provider', [
+function scout_register_settings() {
+    register_setting('scout_settings', 'scout_ai_provider', [
         'sanitize_callback' => function($value) {
             return sanitize_text_field($value) ?: 'anthropic';
         },
         'default' => 'anthropic'
     ]);
 
-    register_setting('sputnik_settings', 'sputnik_api_key', [
-        'sanitize_callback' => 'sputnik_sanitize_api_key',
+    register_setting('scout_settings', 'scout_api_key', [
+        'sanitize_callback' => 'scout_sanitize_api_key',
         'type' => 'string',
         'show_in_rest' => false
     ]);
 
-    register_setting('sputnik_settings', 'sputnik_api_key_verified', [
+    register_setting('scout_settings', 'scout_api_key_verified', [
         'sanitize_callback' => 'rest_sanitize_boolean',
         'type' => 'boolean',
         'show_in_rest' => false
     ]);
 
     add_settings_section(
-        'sputnik_ai_settings',
+        'scout_ai_settings',
         'AI Provider Configuration',
-        'sputnik_settings_section_callback',
-        'sputnik_settings'
+        'scout_settings_section_callback',
+        'scout_settings'
     );
 
     add_settings_field(
-        'sputnik_ai_provider',
+        'scout_ai_provider',
         'AI Provider',
-        'sputnik_provider_field_callback',
-        'sputnik_settings',
-        'sputnik_ai_settings'
+        'scout_provider_field_callback',
+        'scout_settings',
+        'scout_ai_settings'
     );
 
     add_settings_field(
-        'sputnik_api_key',
+        'scout_api_key',
         'API Key',
-        'sputnik_api_key_field_callback',
-        'sputnik_settings',
-        'sputnik_ai_settings'
+        'scout_api_key_field_callback',
+        'scout_settings',
+        'scout_ai_settings'
     );
 }
 
-add_action('admin_init', 'sputnik_register_settings');
+add_action('admin_init', 'scout_register_settings');
 
 /**
  * Sanitize and encrypt API key
  */
-function sputnik_sanitize_api_key($value) {
+function scout_sanitize_api_key($value) {
     // If the value is the mask (user didn't change it), keep the existing key
     if ($value === '••••••••••••') {
-        return get_option('sputnik_api_key', '');
+        return get_option('scout_api_key', '');
     }
     
     if (empty($value)) {
@@ -65,14 +65,14 @@ function sputnik_sanitize_api_key($value) {
     $value = sanitize_text_field($value);
     
     // Encrypt the key before storing
-    return sputnik_encrypt_key($value);
+    return scout_encrypt_key($value);
 }
 
 /**
  * Simple encryption for API keys (uses WordPress constants if available)
  */
-function sputnik_encrypt_key($key) {
-    if (defined('SPUTNIK_ENCRYPTION_KEY')) {
+function scout_encrypt_key($key) {
+    if (defined('SCOUT_ENCRYPTION_KEY')) {
         return base64_encode($key);
     }
     return base64_encode($key);
@@ -81,7 +81,7 @@ function sputnik_encrypt_key($key) {
 /**
  * Decrypt API key
  */
-function sputnik_decrypt_key($encrypted_key) {
+function scout_decrypt_key($encrypted_key) {
     if (empty($encrypted_key)) {
         return '';
     }
@@ -91,9 +91,9 @@ function sputnik_decrypt_key($encrypted_key) {
 /**
  * Get API key (from WordPress options first, then env var)
  */
-function sputnik_get_api_key($provider = null) {
+function scout_get_api_key($provider = null) {
     if (!$provider) {
-        $provider = sputnik_get_ai_provider();
+        $provider = scout_get_ai_provider();
     }
 
     $provider = sanitize_text_field($provider);
@@ -102,18 +102,18 @@ function sputnik_get_api_key($provider = null) {
     // Try WordPress options first
     switch ($provider) {
         case 'anthropic':
-            $key = get_option('sputnik_api_key', '');
+            $key = get_option('scout_api_key', '');
             break;
         case 'openai':
-            $key = get_option('sputnik_api_key', '');
+            $key = get_option('scout_api_key', '');
             break;
         case 'google':
-            $key = get_option('sputnik_api_key', '');
+            $key = get_option('scout_api_key', '');
             break;
     }
 
     if (!empty($key)) {
-        return sputnik_decrypt_key($key);
+        return scout_decrypt_key($key);
     }
 
     // Fallback to environment variable
@@ -130,31 +130,31 @@ function sputnik_get_api_key($provider = null) {
 /**
  * Get AI provider (from WordPress options first, then env var)
  */
-function sputnik_get_ai_provider() {
-    $provider = get_option('sputnik_ai_provider', '');
+function scout_get_ai_provider() {
+    $provider = get_option('scout_ai_provider', '');
     
     if (!empty($provider)) {
         return $provider;
     }
 
     // Fallback to environment variable
-    return getenv('SPUTNIK_AI_PROVIDER') ?: 'anthropic';
+    return getenv('SCOUT_AI_PROVIDER') ?: 'anthropic';
 }
 
 /**
  * Settings section callback
  */
-function sputnik_settings_section_callback() {
-    echo '<p>Configure your AI provider and API key. Sputnik will check WordPress settings first, then fall back to environment variables.</p>';
+function scout_settings_section_callback() {
+    echo '<p>Configure your AI provider and API key. Scout will check WordPress settings first, then fall back to environment variables.</p>';
 }
 
 /**
  * Provider field callback
  */
-function sputnik_provider_field_callback() {
-    $provider = get_option('sputnik_ai_provider', 'anthropic');
+function scout_provider_field_callback() {
+    $provider = get_option('scout_ai_provider', 'anthropic');
     
-    echo '<select name="sputnik_ai_provider" id="sputnik_ai_provider">
+    echo '<select name="scout_ai_provider" id="scout_ai_provider">
         <option value="anthropic"' . selected($provider, 'anthropic', false) . '>Anthropic Claude (Recommended)</option>
         <option value="openai"' . selected($provider, 'openai', false) . '>OpenAI GPT</option>
         <option value="google"' . selected($provider, 'google', false) . '>Google Gemini</option>
@@ -166,11 +166,11 @@ function sputnik_provider_field_callback() {
 /**
  * API key field callback
  */
-function sputnik_api_key_field_callback() {
-    $key = get_option('sputnik_api_key', '');
-    $verified = get_option('sputnik_api_key_verified', false);
+function scout_api_key_field_callback() {
+    $key = get_option('scout_api_key', '');
+    $verified = get_option('scout_api_key_verified', false);
     
-    echo '<input type="password" name="sputnik_api_key" value="' . esc_attr($key ? '••••••••••••' : '') . '" size="50" />';
+    echo '<input type="password" name="scout_api_key" value="' . esc_attr($key ? '••••••••••••' : '') . '" size="50" />';
     echo '<p class="description">Your API key is encrypted and stored securely. Leave blank to use environment variable.</p>';
     
     if ($verified) {

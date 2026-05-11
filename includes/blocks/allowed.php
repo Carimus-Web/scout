@@ -4,7 +4,7 @@
  * Discover blocks by scanning theme directory for block.json files
  * Falls back to WordPress Block Registry if available
  */
-function sputnik_get_allowed_blocks($postType) {
+function scout_get_allowed_blocks($postType) {
     
     $allowed_blocks = [];
     
@@ -32,7 +32,7 @@ function sputnik_get_allowed_blocks($postType) {
     
     // If WordPress Registry empty, scan theme for block.json files
     if (empty($allowed_blocks)) {
-        $allowed_blocks = sputnik_discover_blocks_from_theme();
+        $allowed_blocks = scout_discover_blocks_from_theme();
     }
     
     // Apply theme's allowed_blocks filter to respect post-type restrictions
@@ -51,7 +51,7 @@ function sputnik_get_allowed_blocks($postType) {
  * Discover Carimus blocks by scanning theme blocks directory
  * Looks for block.json files and parses their metadata
  */
-function sputnik_discover_blocks_from_theme() {
+function scout_discover_blocks_from_theme() {
     $blocks = [];
     $theme = wp_get_theme();
     $theme_dir = $theme->get_stylesheet_directory();

@@ -1,6 +1,6 @@
-# Sputnik – AI Content Draft Generator
+# Scout – AI Content Draft Generator
 
-Sputnik is a WordPress plugin that uses AI to generate first drafts of pages using only the blocks and post types available in your Carimus Backbone theme. It acts as a **content writer**, not a designer—creating initial page content that your team can refine and perfect. Sputnik reads block definitions directly from the WordPress block registry and strictly enforces that only allowed blocks and fields are used. The result is always saved as a draft, giving you full control over the final version.
+Scout is a WordPress plugin that uses AI to generate first drafts of pages using only the blocks and post types available in your Carimus Backbone theme. It acts as a **content writer**, not a designer—creating initial page content that your team can refine and perfect. Scout reads block definitions directly from the WordPress block registry and strictly enforces that only allowed blocks and fields are used. The result is always saved as a draft, giving you full control over the final version.
 
 ## Features
 
@@ -20,9 +20,9 @@ Sputnik is a WordPress plugin that uses AI to generate first drafts of pages usi
 
 1. **Select Content Type** – Admin locks in the post type they want to create
 2. **Initial Prompt** – Admin describes what the page should contain
-3. **Block Discovery** – Sputnik queries `get_block_types()` to find all registered Carimus Backbone blocks
-4. **Context Building** – Sputnik filters blocks to only those allowed for the selected post type
-5. **Clarifying Questions** – Sputnik asks follow-up questions if it needs more information
+3. **Block Discovery** – Scout queries `get_block_types()` to find all registered Carimus Backbone blocks
+4. **Context Building** – Scout filters blocks to only those allowed for the selected post type
+5. **Clarifying Questions** – Scout asks follow-up questions if it needs more information
 6. **Content Generation** – When ready, AI generates a page layout JSON using only allowed blocks and fields
 7. **Strict Validation** – Generated layout is rejected if any block or field is outside the allowed set
 8. **Draft Creation** – If validation passes, a new draft post is created in WordPress
@@ -31,8 +31,8 @@ Sputnik is a WordPress plugin that uses AI to generate first drafts of pages usi
 ## Project Structure
 
 ```
-sputnik/
-├── sputnik.php              # Main plugin file
+scout/
+├── scout.php              # Main plugin file
 ├── composer.json            # Composer package configuration
 ├── assets/
 │   └── js/
@@ -40,7 +40,7 @@ sputnik/
 ├── includes/
 │   ├── admin/               # Admin interface components
 │   │   ├── menu.php         # Admin menu & submenu registration
-│   │   ├── page.php         # Main Sputnik page rendering
+│   │   ├── page.php         # Main Scout page rendering
 │   │   ├── assets.php       # Admin asset loading
 │   │   ├── settings-config.php   # Settings registration & helpers
 │   │   └── settings-page.php    # Settings page rendering
@@ -63,12 +63,12 @@ sputnik/
 
 ### Step-by-Step Example
 
-1. **Admin logs in** to WordPress and navigates to Sputnik
+1. **Admin logs in** to WordPress and navigates to Scout
 2. **Selects content type**: "Page"
 3. **Enters initial prompt**: "Create a page for our upcoming hiring event"
-4. **Sputnik responds** with follow-up questions: "What key benefits or details should I highlight?"
+4. **Scout responds** with follow-up questions: "What key benefits or details should I highlight?"
 5. **Admin provides details**: "401k matching, health benefits, flexible work, career growth"
-6. **Sputnik generates** a first draft page using only the allowed blocks for Pages
+6. **Scout generates** a first draft page using only the allowed blocks for Pages
 7. **Draft is saved** automatically to WordPress
 8. **Admin is redirected** to the block editor to review, refine, and publish
 
@@ -78,22 +78,22 @@ The entire workflow takes minutes instead of hours—letting your team focus on 
 
 ### Via Composer (Recommended)
 
-Add Sputnik to your WordPress project using Composer:
+Add Scout to your WordPress project using Composer:
 
 ```bash
-composer require carimus/sputnik
+composer require carimus/scout
 ```
 
 Then activate the plugin in your WordPress admin dashboard, or programmatically:
 
 ```php
-activate_plugin('sputnik/sputnik.php');
+activate_plugin('scout/scout.php');
 ```
 
 ### Manual Installation
 
 1. Download or clone this repository
-2. Copy the `sputnik` folder to your `wp-content/plugins/` directory
+2. Copy the `scout` folder to your `wp-content/plugins/` directory
 3. Activate the plugin from the WordPress admin dashboard
 
 ## Configuration
@@ -108,21 +108,21 @@ activate_plugin('sputnik/sputnik.php');
 
 ### AI Provider Configuration
 
-Sputnik is **provider-agnostic** and supports multiple AI services. Configure your provider and API key in the **Sputnik Settings** page in the WordPress admin.
+Scout is **provider-agnostic** and supports multiple AI services. Configure your provider and API key in the **Scout Settings** page in the WordPress admin.
 
 #### Configure via WordPress Admin (Recommended)
 
-1. In WordPress admin, go to **Sputnik → Settings**
+1. In WordPress admin, go to **Scout → Settings**
 2. Select your AI provider (Claude, OpenAI, or Gemini)
 3. Enter your API key (securely encrypted and stored)
 4. Click **Save Settings**
 
 #### Configure via Environment Variables (Fallback)
 
-If no API key is set in WordPress Settings, Sputnik will check for environment variables:
+If no API key is set in WordPress Settings, Scout will check for environment variables:
 
 ```bash
-export SPUTNIK_AI_PROVIDER=anthropic  # or 'openai' or 'google'
+export SCOUT_AI_PROVIDER=anthropic  # or 'openai' or 'google'
 export ANTHROPIC_API_KEY=your_key_here
 export OPENAI_API_KEY=your_key_here
 export GOOGLE_API_KEY=your_key_here
@@ -144,21 +144,21 @@ Get API key: [https://aistudio.google.com/app/apikey](https://aistudio.google.co
 
 ### Setup
 
-1. Activate the Sputnik plugin in WordPress
-2. Go to **Sputnik → Settings** in the WordPress admin
+1. Activate the Scout plugin in WordPress
+2. Go to **Scout → Settings** in the WordPress admin
 3. Select your AI provider and enter your API key
 4. Click **Save Settings**
 5. Block configuration is automatic – Carimus theme defines allowed blocks and post types
-6. Navigate to **Sputnik** in the WordPress admin to start generating page drafts
+6. Navigate to **Scout** in the WordPress admin to start generating page drafts
 
-**Note:** If you prefer environment variables, you can skip step 2-4 and set `SPUTNIK_AI_PROVIDER` and the corresponding API key env var instead.
+**Note:** If you prefer environment variables, you can skip step 2-4 and set `SCOUT_AI_PROVIDER` and the corresponding API key env var instead.
 
 ### Important Notes
 
 - **Content Type is Locked** – Once you select a post type, it cannot be changed mid-conversation
-- **Drafts Only** – Sputnik ALWAYS saves pages as drafts. You control when they're published
-- **Use Only Allowed Blocks** – Sputnik strictly validates and will reject any layout using blocks outside your allowed set
-- **First Draft Only** – Sputnik generates initial content; your team handles refinement and perfection
+- **Drafts Only** – Scout ALWAYS saves pages as drafts. You control when they're published
+- **Use Only Allowed Blocks** – Scout strictly validates and will reject any layout using blocks outside your allowed set
+- **First Draft Only** – Scout generates initial content; your team handles refinement and perfection
 
 ## Core Modules
 
@@ -167,10 +167,10 @@ Get API key: [https://aistudio.google.com/app/apikey](https://aistudio.google.co
 Handles provider and API key configuration:
 
 - Registers WordPress settings and fields
-- Provides `sputnik_get_ai_provider()` – gets provider from WordPress options, falls back to env var
-- Provides `sputnik_get_api_key($provider)` – gets encrypted API key, falls back to env var
+- Provides `scout_get_ai_provider()` – gets provider from WordPress options, falls back to env var
+- Provides `scout_get_api_key($provider)` – gets encrypted API key, falls back to env var
 - Encrypts API keys before storage, decrypts on retrieval
-- Settings accessible via **Sputnik → Settings** in WordPress admin
+- Settings accessible via **Scout → Settings** in WordPress admin
 
 ### Block Metadata Reader (`includes/blocks/allowed.php`)
 
@@ -241,15 +241,15 @@ Handles the creation of WordPress draft posts with the generated block content:
 
 Scans the WordPress media library and provides intelligent image selection:
 
-- **`sputnik_get_media_library_images($limit)`** – Fetches up to 20 media library images with full metadata (ID, URL, alt text, dimensions, title)
-- **`sputnik_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
+- **`scout_get_media_library_images($limit)`** – Fetches up to 20 media library images with full metadata (ID, URL, alt text, dimensions, title)
+- **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
 - AI receives media library context in the system prompt and selects images intelligently based on content context
 - For example: "vehicle-related" content triggers selection of images with vehicles
 - Images are stored with complete ACF metadata (ID, URL, alt text, width, height, caption)
 
 **How it works:**
 
-1. When generating a page, Sputnik fetches the 20 most recent images from your media library
+1. When generating a page, Scout fetches the 20 most recent images from your media library
 2. Image metadata is included in the AI prompt so Claude can reference them
 3. For blocks with image fields, Claude analyzes the content and selects appropriate image IDs
 4. Image IDs are converted to full ACF image arrays before being stored in blocks
@@ -259,7 +259,7 @@ Scans the WordPress media library and provides intelligent image selection:
 
 ### Chat Endpoint
 
-**POST** `/wp-json/sputnik/v1/chat`
+**POST** `/wp-json/scout/v1/chat`
 
 Request body:
 
@@ -299,13 +299,13 @@ In your code, use these helper functions to access AI configuration:
 
 ```php
 // Get the currently configured AI provider
-$provider = sputnik_get_ai_provider();  // Returns 'anthropic', 'openai', or 'google'
+$provider = scout_get_ai_provider();  // Returns 'anthropic', 'openai', or 'google'
 
 // Get the API key for a provider
-$api_key = sputnik_get_api_key('anthropic');  // Returns encrypted key from options or env var
+$api_key = scout_get_api_key('anthropic');  // Returns encrypted key from options or env var
 
 // Or get key for current provider
-$api_key = sputnik_get_api_key();  // Gets key for sputnik_get_ai_provider()
+$api_key = scout_get_api_key();  // Gets key for scout_get_ai_provider()
 ```
 
 Configuration sources (checked in order):
@@ -315,7 +315,7 @@ Configuration sources (checked in order):
 
 ### Adding Support for New Block Types
 
-To add a new block that Sputnik can generate:
+To add a new block that Scout can generate:
 
 1. **In Carimus Backbone Theme:**
     - Create a new directory in `templates/blocks/{block-name}/`
@@ -327,13 +327,13 @@ To add a new block that Sputnik can generate:
     - Block will be auto-discovered via the `allowed_block_types_all` filter
     - Add post type to the filter if needed
 
-3. **In Sputnik:**
+3. **In Scout:**
     - No changes needed – blocks are discovered dynamically
     - Test the AI output by creating pages with the new block
 
 ### Block JSON Structure
 
-Sputnik reads and uses the full `block.json` structure from your Carimus Backbone blocks:
+Scout reads and uses the full `block.json` structure from your Carimus Backbone blocks:
 
 ```json
 {
@@ -356,31 +356,31 @@ Sputnik reads and uses the full `block.json` structure from your Carimus Backbon
 }
 ```
 
-The `acf.fields` object defines the block's available ACF fields and their types. Sputnik uses this to generate valid field data.
+The `acf.fields` object defines the block's available ACF fields and their types. Scout uses this to generate valid field data.
 
 ## License
 
-Sputnik is licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html). This means you can use, modify, and distribute this plugin freely as long as you maintain the same license.
+Scout is licensed under the [GNU General Public License v2.0 or later](https://www.gnu.org/licenses/gpl-2.0.html). This means you can use, modify, and distribute this plugin freely as long as you maintain the same license.
 
 ## Versioning & Updates
 
-Sputnik uses semantic versioning (MAJOR.MINOR.PATCH). You can track and update the plugin across multiple installations using:
+Scout uses semantic versioning (MAJOR.MINOR.PATCH). You can track and update the plugin across multiple installations using:
 
 ### Option 1: Composer (Recommended for Development)
 
 ```bash
-composer require carimus/sputnik:^1.0
+composer require carimus/scout:^1.0
 ```
 
 Update with:
 
 ```bash
-composer update carimus/sputnik
+composer update carimus/scout
 ```
 
 ### Option 2: GitHub Releases (Manual Updates)
 
-Download releases from: [https://github.com/carimus/sputnik/releases](https://github.com/carimus/sputnik/releases)
+Download releases from: [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
 
 ### Option 3: WordPress.org Plugin Repository (Future)
 
@@ -390,10 +390,10 @@ Once submitted to the WordPress.org plugin repository, updates will be managed d
 
 To release a new version:
 
-1. Update version number in `sputnik.php`:
+1. Update version number in `scout.php`:
 
     ```php
-    define('SPUTNIK_VERSION', '1.1.0');
+    define('SCOUT_VERSION', '1.1.0');
     ```
 
 2. Update version in `composer.json`:

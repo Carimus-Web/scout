@@ -1,6 +1,6 @@
 <?php
 
-// All includes handled in main sputnik.php file
+// All includes handled in main scout.php file
 
 // Ensure blocks are initialized for REST API context
 add_action('rest_api_init', function () {
@@ -11,7 +11,7 @@ add_action('rest_api_init', function () {
 add_action('wp_loaded', function () {
     // Register REST routes after WordPress has fully loaded
     // This ensures blocks from themes/plugins are registered first
-    register_rest_route('sputnik/v1', '/test', [
+    register_rest_route('scout/v1', '/test', [
         'methods' => 'POST',
         'callback' => function($request) {
             try {
@@ -21,7 +21,7 @@ add_action('wp_loaded', function () {
                 $blocks_function_exists = function_exists('get_block_types');
                 
                 // Use new discovery function that scans theme directory
-                $all_discovered_blocks = sputnik_discover_blocks_from_theme();
+                $all_discovered_blocks = scout_discover_blocks_from_theme();
                 $carimus_blocks = array_filter($all_discovered_blocks, function($b) {
                     return strpos($b['name'], 'carimus/') === 0;
                 });
@@ -36,20 +36,20 @@ add_action('wp_loaded', function () {
                 global $wp_version;
                 
                 // Debug API key storage
-                $provider = sputnik_get_ai_provider();
-                $stored_key = get_option('sputnik_api_key', '');
-                $retrieved_key = sputnik_get_api_key($provider);
+                $provider = scout_get_ai_provider();
+                $stored_key = get_option('scout_api_key', '');
+                $retrieved_key = scout_get_api_key($provider);
                 $key_length = strlen($retrieved_key);
                 
                 // Log for debugging
-                error_log('Sputnik Test - Discovered blocks: ' . count($all_discovered_blocks) . ', Carimus blocks: ' . count($carimus_blocks));
-                error_log('Sputnik Test - Provider: ' . $provider . ', Key stored: ' . (!empty($stored_key) ? 'YES' : 'NO') . ', Key retrieved length: ' . $key_length);
+                error_log('Scout Test - Discovered blocks: ' . count($all_discovered_blocks) . ', Carimus blocks: ' . count($carimus_blocks));
+                error_log('Scout Test - Provider: ' . $provider . ', Key stored: ' . (!empty($stored_key) ? 'YES' : 'NO') . ', Key retrieved length: ' . $key_length);
                 
                 return [
                     'status' => 'API is working',
                     'received' => $params,
-                    'provider' => sputnik_get_ai_provider(),
-                    'has_key' => !empty(sputnik_get_api_key(sputnik_get_ai_provider())),
+                    'provider' => scout_get_ai_provider(),
+                    'has_key' => !empty(scout_get_api_key(scout_get_ai_provider())),
                     'api_key_debug' => [
                         'provider' => $provider,
                         'stored_in_options' => !empty($stored_key),
@@ -72,13 +72,13 @@ add_action('wp_loaded', function () {
         'permission_callback' => '__return_true',
     ]);
     
-    register_rest_route('sputnik/v1', '/chat', [
+    register_rest_route('scout/v1', '/chat', [
         'methods' => 'POST',
         'callback' => function($request) {
             try {
-                return sputnik_chat_handler($request);
+                return scout_chat_handler($request);
             } catch (Throwable $e) {
-                error_log('Sputnik Chat Error: ' . $e->getMessage());
+                error_log('Scout Chat Error: ' . $e->getMessage());
                 return [
                     'error' => $e->getMessage()
                 ];
@@ -87,13 +87,13 @@ add_action('wp_loaded', function () {
         'permission_callback' => '__return_true',
     ]);
     
-    register_rest_route('sputnik/v1', '/create-page', [
+    register_rest_route('scout/v1', '/create-page', [
         'methods' => 'POST',
         'callback' => function($request) {
             try {
-                return sputnik_create_page_handler($request);
+                return scout_create_page_handler($request);
             } catch (Throwable $e) {
-                error_log('Sputnik Create Page Error: ' . $e->getMessage());
+                error_log('Scout Create Page Error: ' . $e->getMessage());
                 return [
                     'error' => $e->getMessage()
                 ];

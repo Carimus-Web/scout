@@ -1,10 +1,10 @@
 <?php
 
-require_once SPUTNIK_PATH . 'includes/content/block-builder.php';
-require_once SPUTNIK_PATH . 'includes/media/placeholder.php';
+require_once SCOUT_PATH . 'includes/content/block-builder.php';
+require_once SCOUT_PATH . 'includes/media/placeholder.php';
 
-function sputnik_create_post($postType, $layout) {
-    error_log('sputnik_create_post called with postType: ' . $postType);
+function scout_create_post($postType, $layout) {
+    error_log('scout_create_post called with postType: ' . $postType);
 
     $post_id = wp_insert_post([
         'post_type' => $postType,
@@ -20,7 +20,7 @@ function sputnik_create_post($postType, $layout) {
 
     error_log('Post created with ID: ' . $post_id);
 
-    $content = sputnik_build_blocks($layout);
+    $content = scout_build_blocks($layout);
     error_log('Blocks built, content length: ' . strlen($content));
     error_log('Full serialized blocks: ' . $content);
 
@@ -38,8 +38,8 @@ function sputnik_create_post($postType, $layout) {
     return $post_id;
 }
 
-function sputnik_update_post($post_id, $layout) {
-    error_log('sputnik_update_post called with post_id: ' . $post_id);
+function scout_update_post($post_id, $layout) {
+    error_log('scout_update_post called with post_id: ' . $post_id);
 
     // Verify the post exists
     $post = get_post($post_id);
@@ -50,7 +50,7 @@ function sputnik_update_post($post_id, $layout) {
 
     error_log('Post found: ' . $post->post_title);
 
-    $content = sputnik_build_blocks($layout);
+    $content = scout_build_blocks($layout);
     error_log('Blocks built, content length: ' . strlen($content));
     error_log('Full serialized blocks: ' . $content);
 
