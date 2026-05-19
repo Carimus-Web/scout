@@ -88,7 +88,10 @@ function scout_ai_anthropic($messages, $allowed_blocks) {
     $content = $body['content'][0]['text'];
 
     $decoded = json_decode($content, true);
-    if ($decoded) return $decoded;
+    if ($decoded) {
+        // Layout will be cleaned in scout_build_blocks to remove wrapping HTML tags
+        return $decoded;
+    }
 
     return ['message' => $content];
 }
@@ -129,7 +132,13 @@ function scout_ai_openai($messages, $allowed_blocks) {
     $content = $body['choices'][0]['message']['content'] ?? '';
     
     $decoded = json_decode($content, true);
-    if ($decoded) return $decoded;
+    if ($decoded) {
+        // Unescape WYSIWYG fields that may have been escaped by REST API
+        if (!empty($decoded['layout'])) {
+            $decoded['layout'] = scout_unescape_wysiwyg_fields($decoded['layout'], $allowed_blocks);
+        }
+        return $decoded;
+    }
     
     return ['message' => $content];
 }
@@ -185,7 +194,13 @@ function scout_ai_google($messages, $allowed_blocks) {
     $content = $body['candidates'][0]['content']['parts'][0]['text'] ?? '';
     
     $decoded = json_decode($content, true);
-    if ($decoded) return $decoded;
+    if ($decoded) {
+        // Unescape WYSIWYG fields that may have been escaped by REST API
+        if (!empty($decoded['layout'])) {
+            $decoded['layout'] = scout_unescape_wysiwyg_fields($decoded['layout'], $allowed_blocks);
+        }
+        return $decoded;
+    }
     
     return ['message' => $content];
 }

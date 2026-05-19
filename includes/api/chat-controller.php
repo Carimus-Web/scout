@@ -151,6 +151,8 @@ function scout_create_page_handler($request) {
             ];
         }
 
+        error_log('create_page_handler received layout with ' . count($layout) . ' blocks');
+
         if ($post_id) {
             // Update existing post
             error_log('Updating existing post ID: ' . $post_id);

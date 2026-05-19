@@ -20,7 +20,7 @@ function scout_create_post($postType, $layout) {
 
     error_log('Post created with ID: ' . $post_id);
 
-    $content = scout_build_blocks($layout);
+    $content = scout_build_blocks($layout, $postType);
     error_log('Blocks built, content length: ' . strlen($content));
     error_log('Full serialized blocks: ' . $content);
 
@@ -50,7 +50,7 @@ function scout_update_post($post_id, $layout) {
 
     error_log('Post found: ' . $post->post_title);
 
-    $content = scout_build_blocks($layout);
+    $content = scout_build_blocks($layout, $post->post_type);
     error_log('Blocks built, content length: ' . strlen($content));
     error_log('Full serialized blocks: ' . $content);
 

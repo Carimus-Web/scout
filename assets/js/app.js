@@ -82,7 +82,7 @@ app.innerHTML = `
     <!-- Header -->
     <div class="text-center px-6 py-4 border-b border-cyan-200/50 bg-white/70 backdrop-blur-sm z-10">
       <h2 class="text-4xl font-bold mb-0">
-        <span class="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 bg-clip-text text-transparent">Scout</span>
+        <span class="bg-gradient-to-r from-cyan-400 via-cyan-500 to-blue-500 bg-clip-text text-transparent">Scout (test)</span>
       </h2>
     </div>
     
