@@ -128,17 +128,23 @@ function scout_get_api_key($provider = null) {
 }
 
 /**
- * Get AI provider (from WordPress options first, then env var)
+ * Get AI provider (from WordPress options first, then env var, then default to anthropic)
  */
 function scout_get_ai_provider() {
-    $provider = get_option('scout_ai_provider', '');
-    
+    // Try WordPress option first
+    $provider = get_option('scout_ai_provider');
     if (!empty($provider)) {
         return $provider;
     }
 
-    // Fallback to environment variable
-    return getenv('SCOUT_AI_PROVIDER') ?: 'anthropic';
+    // Try environment variable
+    $env_provider = getenv('SCOUT_AI_PROVIDER');
+    if (!empty($env_provider)) {
+        return $env_provider;
+    }
+
+    // Default to anthropic if nothing is set
+    return 'anthropic';
 }
 
 /**

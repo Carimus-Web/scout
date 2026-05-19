@@ -10,6 +10,7 @@ function scout_chat_handler($request) {
     try {
         // Check API configuration first
         $provider = scout_get_ai_provider();
+        $api_key = scout_get_api_key($provider);
 
         if (empty($api_key)) {
             return [
