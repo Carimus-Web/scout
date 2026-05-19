@@ -58,9 +58,12 @@ function scout_get_all_field_keys_for_block($block_type) {
                 if (!is_array($condition_group)) continue;
                 foreach ($condition_group as $condition) {
                     if (!is_array($condition)) continue;
-                    if (($condition['param'] ?? '') === 'block' && strpos($condition['value'] ?? '', $block_type) !== false) {
-                        $is_for_block = true;
-                        break 2;
+                    if (($condition['param'] ?? '') === 'block') {
+                        $block_value = $condition['value'] ?? '';
+                        if (strpos($block_value, $block_type) !== false || strpos($block_value, 'carimus/' . $block_type) !== false) {
+                            $is_for_block = true;
+                            break 2;
+                        }
                     }
                 }
             }
@@ -107,6 +110,7 @@ function scout_build_blocks($layout, $postType = null) {
 
     $blocks = [];
     $totalBlocks = count($layout);
+    $blockIndex = 0;
     
     // Get allowed blocks to check field types for WYSIWYG fields
     $allowed_blocks = [];
@@ -155,11 +159,8 @@ function scout_build_blocks($layout, $postType = null) {
         $fields = $block['fields'];
         $block_type = str_replace('carimus/', '', $block['block']);
         
-        // Build block data in FLAT format, matching manually created blocks
-        // Repeater data goes in as: highlights_0_eyebrow, highlights_0_headline, etc.
+        // Build block data in FLAT format
         $acf_fields = [];
-        
-        error_log('scout_build_blocks: Processing ' . $block['block'] . ' with fields: ' . json_encode(array_keys($fields)));
         
         // Process all fields
         foreach ($fields as $field_name => $field_value) {
@@ -168,7 +169,6 @@ function scout_build_blocks($layout, $postType = null) {
             
             // FALLBACK: If field type wasn't mapped, try to detect it from data structure
             if (!$field_type && is_array($field_value) && !empty($field_value)) {
-                // If it's an array of objects with consistent keys, it's likely a repeater
                 if (isset($field_value[0]) && is_array($field_value[0])) {
                     $field_type = 'repeater';
                 }
@@ -176,7 +176,6 @@ function scout_build_blocks($layout, $postType = null) {
             
             // Handle repeater fields - store in FLAT format
             if ($field_type === 'repeater') {
-                
                 if (!is_array($field_value)) {
                     if (is_string($field_value)) {
                         $decoded = json_decode($field_value, true);
@@ -206,12 +205,6 @@ function scout_build_blocks($layout, $postType = null) {
                             // Store flat key: field_name_index_subfield
                             $flat_key = $field_name . '_' . $row_index . '_' . $sub_field_name;
                             $acf_fields[$flat_key] = $sub_field_value;
-                            
-                            // Get and store sub-field key reference
-                            $sub_field_key = $field_keys_map[$block['block']][$field_name . '__' . $sub_field_name] ?? '';
-                            if ($sub_field_key) {
-                                $acf_fields['_' . $flat_key] = $sub_field_key;
-                            }
                         }
                     }
                 }
@@ -222,16 +215,10 @@ function scout_build_blocks($layout, $postType = null) {
                     $field_value = scout_clean_wysiwyg_content($field_value);
                 }
                 $acf_fields[$field_name] = $field_value;
-                if ($field_key) {
-                    $acf_fields['_' . $field_name] = $field_key;
-                }
             }
             // For all other fields
             else {
                 $acf_fields[$field_name] = $field_value;
-                if ($field_key) {
-                    $acf_fields['_' . $field_name] = $field_key;
-                }
             }
         }
         
@@ -255,39 +242,39 @@ function scout_build_blocks($layout, $postType = null) {
         $isLastBlock = ($blockIndex === $totalBlocks - 1);
         $bottomPadding = $isLastBlock ? 'none' : 'lg';
 
-        // Add padding as flat fields (matching working manual blocks)
-        $acf_fields['padding'] = '';
-        $acf_fields['padding_top'] = '';
-        $acf_fields['padding_top_desktop'] = 'none';
-        $acf_fields['padding_top_tablet'] = 'none';
-        $acf_fields['padding_top_mobile'] = 'none';
-        $acf_fields['padding_bottom'] = '';
-        $acf_fields['padding_bottom_desktop'] = $bottomPadding;
-        $acf_fields['padding_bottom_tablet'] = $bottomPadding;
-        $acf_fields['padding_bottom_mobile'] = $bottomPadding;
+        // Add padding in NESTED format for render templates (they call get_field('padding'))
+        // The structure matches ACF's nested format
+        $padding_nested = [
+            'top' => [
+                'desktop' => 'none',
+                'desktop_custom' => '',
+                'tablet' => 'none',
+                'tablet_custom' => '',
+                'mobile' => 'none',
+                'mobile_custom' => ''
+            ],
+            'bottom' => [
+                'desktop' => $bottomPadding,
+                'desktop_custom' => '',
+                'tablet' => $bottomPadding,
+                'tablet_custom' => '',
+                'mobile' => $bottomPadding,
+                'mobile_custom' => ''
+            ]
+        ];
         
-        // Add settings field as flat fields
+        $acf_fields['padding'] = $padding_nested;
+        
+        // Add settings field as empty
         $acf_fields['settings'] = '';
         $acf_fields['id'] = '';
         $acf_fields['z-index'] = '';
         
-        // Add ALL field key references
-        // Get all field keys for padding and other fields
+        // Get all field keys and add them with underscore
         $field_keys_for_block = scout_get_all_field_keys_for_block($block_type);
-        
-        $padding_fields = ['padding', 'padding_top', 'padding_top_desktop', 'padding_top_tablet', 'padding_top_mobile', 
-                          'padding_bottom', 'padding_bottom_desktop', 'padding_bottom_tablet', 'padding_bottom_mobile'];
-        
-        foreach ($padding_fields as $pf) {
-            if (isset($field_keys_for_block[$pf])) {
-                $acf_fields['_' . $pf] = $field_keys_for_block[$pf];
-            }
-        }
-        
-        $settings_fields = ['settings', 'id', 'z-index'];
-        foreach ($settings_fields as $sf) {
-            if (isset($field_keys_for_block[$sf])) {
-                $acf_fields['_' . $sf] = $field_keys_for_block[$sf];
+        foreach ($field_keys_for_block as $fname => $fkey) {
+            if (!isset($acf_fields['_' . $fname])) {
+                $acf_fields['_' . $fname] = $fkey;
             }
         }
 

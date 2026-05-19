@@ -8,16 +8,8 @@ require_once SCOUT_PATH . 'includes/content/post-creator.php';
 
 function scout_chat_handler($request) {
     try {
-        // Log the request for debugging
-        error_log('Scout Chat Handler Called');
-        
         // Check API configuration first
-        error_log('Getting AI provider...');
         $provider = scout_get_ai_provider();
-        error_log('Provider: ' . $provider);
-        
-        $api_key = scout_get_api_key($provider);
-        error_log('API Key: ' . (empty($api_key) ? 'empty' : 'set'));
 
         if (empty($api_key)) {
             return [
@@ -26,15 +18,12 @@ function scout_chat_handler($request) {
         }
 
         // Get parameters from JSON body
-        error_log('Getting JSON params...');
         $params = $request->get_json_params();
-        error_log('Params received: ' . json_encode($params));
         
         $messages = isset($params['messages']) ? $params['messages'] : null;
         $postType = isset($params['postType']) ? $params['postType'] : null;
 
         if (empty($messages) || empty($postType)) {
-            error_log('Missing parameters - Messages: ' . (empty($messages) ? 'empty' : 'set') . ', PostType: ' . (empty($postType) ? 'empty' : $postType));
             return [
                 'error' => 'Missing required parameters: messages and postType'
             ];
@@ -43,8 +32,6 @@ function scout_chat_handler($request) {
         $allowed_blocks = scout_get_allowed_blocks($postType);
 
         if (empty($allowed_blocks)) {
-            error_log('No blocks found. get_block_types exists: ' . (function_exists('get_block_types') ? 'yes' : 'no'));
-            
             // If blocks function doesn't exist, blocks haven't loaded yet
             if (!function_exists('get_block_types')) {
                 return [
@@ -86,23 +73,17 @@ function scout_chat_handler($request) {
                     'error' => 'Failed to create post: ' . $post_id->get_error_message()
                 ];
             }
-
-            error_log('Post created in chat_handler, ID: ' . $post_id);
             
             $edit_url = get_edit_post_link($post_id, 'raw');
             $post_url = get_permalink($post_id);
             
-            error_log('Chat handler URLs - edit_url: ' . ($edit_url ? $edit_url : 'null') . ', post_url: ' . ($post_url ? $post_url : 'null'));
-            
             // Fallback: construct edit URL manually if get_edit_post_link returns null
             if (!$edit_url) {
-                error_log('get_edit_post_link returned null in chat_handler, using fallback');
                 $edit_url = admin_url('post.php?post=' . $post_id . '&action=edit');
             }
             
             // If post_url is null, construct it as preview
             if (!$post_url) {
-                error_log('get_permalink returned null in chat_handler, using preview URL');
                 $post_url = add_query_arg('preview', 'true', get_home_url() . '?p=' . $post_id);
             }
 
@@ -138,8 +119,6 @@ function scout_chat_handler($request) {
  */
 function scout_create_page_handler($request) {
     try {
-        error_log('Scout Create Page Handler Called');
-        
         $params = $request->get_json_params();
         $layout = isset($params['layout']) ? $params['layout'] : null;
         $postType = isset($params['postType']) ? $params['postType'] : null;
@@ -151,45 +130,33 @@ function scout_create_page_handler($request) {
             ];
         }
 
-        error_log('create_page_handler received layout with ' . count($layout) . ' blocks');
-
         if ($post_id) {
             // Update existing post
-            error_log('Updating existing post ID: ' . $post_id);
             $result = scout_update_post($post_id, $layout);
         } else {
             // Create new post
-            error_log('Creating new page with post type: ' . $postType);
             $result = scout_create_post($postType, $layout);
         }
 
         if (is_wp_error($result)) {
-            error_log('Failed to create/update post: ' . $result->get_error_message());
             return [
                 'error' => 'Failed to create/update post: ' . $result->get_error_message()
             ];
         }
 
         $post_id = $result;
-        error_log('Page created/updated with ID: ' . $post_id);
         
         // Get the URLs - these can be null if post doesn't exist
         $edit_url = get_edit_post_link($post_id, 'raw');
         $post_url = get_permalink($post_id);
         
-        error_log('Edit URL: ' . ($edit_url ? $edit_url : 'null'));
-        error_log('Post URL: ' . ($post_url ? $post_url : 'null'));
-        
         // Fallback: construct edit URL manually if get_edit_post_link returns null
         if (!$edit_url) {
-            error_log('get_edit_post_link returned null, using fallback URL construction');
             $edit_url = admin_url('post.php?post=' . $post_id . '&action=edit');
-            error_log('Fallback edit URL: ' . $edit_url);
         }
         
         // If post_url is null, construct it as preview
         if (!$post_url) {
-            error_log('get_permalink returned null, using preview URL');
             $post_url = add_query_arg('preview', 'true', get_home_url() . '?p=' . $post_id);
         }
         

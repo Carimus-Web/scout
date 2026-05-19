@@ -511,19 +511,9 @@ async function submitMessage() {
                 Array.isArray(layoutData.layout)
             ) {
                 isLayoutJson = true;
-            } else {
-                console.log(
-                    'Parsed JSON but no layout array found:',
-                    Object.keys(layoutData || {}),
-                );
             }
         } catch (e) {
             // Not JSON, treat as regular message
-            console.log('Reply is not JSON:', e.message);
-            console.log(
-                'First 200 chars of content:',
-                replyContent.substring(0, 200),
-            );
         }
 
         if (isLayoutJson) {

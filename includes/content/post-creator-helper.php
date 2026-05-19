@@ -1,92 +1,209 @@
 <?php
 
 /**
- * Registers block field data in post meta for ACF retrieval
+ * Extract repeater field keys from ACF JSON files
+ * Returns a map of block names to repeater field names to ACF field keys
  * 
- * ACF render templates call get_field() which reads from post meta.
- * This function stores field data in post meta in the flat format that ACF expects,
- * so get_field() can retrieve and convert it to nested format for templates.
- * 
- * Block attributes store data in flat format (for the ACF block editor).
- * Post meta also stores data in flat format (for get_field() to read).
- * get_field() automatically converts flat format to nested for templates.
- * 
- * @param int $post_id Post ID
- * @param array $layout Block layout array
+ * @return array Map like: ['highlights' => ['highlights' => 'field_699d51ac08929']]
  */
-function scout_register_repeater_fields($post_id, $layout) {
-    require_once SCOUT_PATH . 'includes/blocks/allowed.php';
+function scout_get_repeater_field_keys() {
+    static $field_keys_map = null;
     
-    $field_keys_cache = [];
+    if ($field_keys_map !== null) {
+        return $field_keys_map;
+    }
     
-    // Build a cache of field keys for all blocks
+    $field_keys_map = [];
+    
     $theme_dir = get_stylesheet_directory();
     $acf_json_dir = $theme_dir . '/acf-json';
     
-    if (is_dir($acf_json_dir)) {
-        $json_files = glob($acf_json_dir . '/*.json');
-        foreach ($json_files as $file) {
-            $json_content = file_get_contents($file);
-            $field_group = json_decode($json_content, true);
-            if ($field_group && is_array($field_group) && !empty($field_group['fields'])) {
-                foreach ($field_group['fields'] as $field) {
-                    if (!empty($field['name']) && !empty($field['key'])) {
-                        $field_keys_cache[$field['name']] = $field['key'];
+    if (!is_dir($acf_json_dir)) {
+        return $field_keys_map;
+    }
+    
+    $json_files = glob($acf_json_dir . '/*.json');
+    
+    foreach ($json_files as $file) {
+        $json_content = file_get_contents($file);
+        $field_group = json_decode($json_content, true);
+        
+        if (!$field_group || !is_array($field_group)) {
+            continue;
+        }
+        
+        $block_name = scout_get_block_from_field_group($field_group);
+        if (!$block_name) {
+            continue;
+        }
+        
+        $block_name = str_replace('carimus/', '', $block_name);
+        
+        // Extract repeater fields with their keys
+        if (!empty($field_group['fields']) && is_array($field_group['fields'])) {
+            foreach ($field_group['fields'] as $field) {
+                if (is_array($field) && ($field['type'] ?? '') === 'repeater' && !empty($field['name'])) {
+                    if (!isset($field_keys_map[$block_name])) {
+                        $field_keys_map[$block_name] = [];
                     }
-                    if (!empty($field['sub_fields'])) {
-                        foreach ($field['sub_fields'] as $sub_field) {
-                            if (!empty($sub_field['name']) && !empty($sub_field['key'])) {
-                                $field_keys_cache[$sub_field['name']] = $sub_field['key'];
-                            }
-                        }
-                    }
+                    $field_keys_map[$block_name][$field['name']] = $field['key'];
                 }
             }
         }
     }
     
-    // Process each block and store field data in post meta in FLAT format
-    foreach ($layout as $block) {
-        if (!isset($block['fields']) || !is_array($block['fields'])) {
+    return $field_keys_map;
+}
+
+/**
+ * Scans the theme's acf-json folder and builds a dynamic map of blocks to repeater fields
+ * 
+ * @return array Map of block names (without 'carimus/' prefix) to array of repeater field names
+ * Example: ['highlights' => ['highlights'], 'what-we-do' => ['slides']]
+ */
+function scout_discover_repeater_fields() {
+    static $repeater_map = null;
+    
+    // Cache the result so we don't scan on every call
+    if ($repeater_map !== null) {
+        return $repeater_map;
+    }
+    
+    $repeater_map = [];
+    
+    // Try to find acf-json folder in the active theme
+    $theme_dir = get_stylesheet_directory();
+    $acf_json_dir = $theme_dir . '/acf-json';
+    
+    if (!is_dir($acf_json_dir)) {
+        return $repeater_map;
+    }
+    
+    // Scan all JSON files in the acf-json folder
+    $json_files = glob($acf_json_dir . '/*.json');
+    
+    foreach ($json_files as $file) {
+        $json_content = file_get_contents($file);
+        $field_group = json_decode($json_content, true);
+        
+        if (!$field_group || !is_array($field_group)) {
             continue;
         }
         
-        foreach ($block['fields'] as $field_name => $field_value) {
-            // Check if this is a repeater (array of arrays)
-            if (is_array($field_value) && !empty($field_value) && isset($field_value[0]) && is_array($field_value[0])) {
-                // Store repeater in flat format for ACF
-                // Format: highlights_0_eyebrow, highlights_0_headline, highlights_1_eyebrow, etc.
-                
-                // Store row count
-                update_post_meta($post_id, $field_name, count($field_value));
-                
-                // Store field key
-                if (isset($field_keys_cache[$field_name])) {
-                    update_post_meta($post_id, '_' . $field_name, $field_keys_cache[$field_name]);
-                }
-                
-                // Flatten and store each row
-                foreach ($field_value as $row_index => $row) {
-                    if (is_array($row)) {
-                        foreach ($row as $sub_field_name => $sub_field_value) {
-                            $flat_key = $field_name . '_' . $row_index . '_' . $sub_field_name;
-                            update_post_meta($post_id, $flat_key, $sub_field_value);
-                            
-                            // Also store the sub-field key reference for ACF
-                            if (isset($field_keys_cache[$sub_field_name])) {
-                                update_post_meta($post_id, '_' . $flat_key, $field_keys_cache[$sub_field_name]);
-                            }
-                        }
-                    }
-                }
-            } else {
-                // Non-repeater fields - store as-is
-                update_post_meta($post_id, $field_name, $field_value);
-                if (isset($field_keys_cache[$field_name])) {
-                    update_post_meta($post_id, '_' . $field_name, $field_keys_cache[$field_name]);
-                }
+        // Check if this field group is for a block
+        $block_name = scout_get_block_from_field_group($field_group);
+        
+        if (!$block_name) {
+            continue;
+        }
+        
+        // Clean up block name (remove 'carimus/' prefix if present)
+        $block_name = str_replace('carimus/', '', $block_name);
+        
+        // Find all repeater fields in this group
+        $repeater_fields = scout_extract_repeater_fields($field_group);
+        
+        if (!empty($repeater_fields)) {
+            $repeater_map[$block_name] = $repeater_fields;
+        }
+    }
+    
+    return $repeater_map;
+}
+
+/**
+ * Extract the block name from a field group if it's associated with a block
+ * 
+ * @param array $field_group ACF field group array from JSON
+ * @return string|null Block name (e.g., 'carimus/highlights') or null if not a block field group
+ */
+function scout_get_block_from_field_group($field_group) {
+    if (empty($field_group['location']) || !is_array($field_group['location'])) {
+        return null;
+    }
+    
+    // location is an array of arrays - look for block conditions
+    foreach ($field_group['location'] as $condition_group) {
+        if (!is_array($condition_group)) {
+            continue;
+        }
+        
+        foreach ($condition_group as $condition) {
+            if (!is_array($condition)) {
+                continue;
+            }
+            
+            // Look for: param = 'block', value = 'carimus/...'
+            if (($condition['param'] ?? '') === 'block' && !empty($condition['value'])) {
+                return $condition['value'];
             }
         }
+    }
+    
+    return null;
+}
+
+/**
+ * Extract all repeater field names from a field group
+ * 
+ * @param array $field_group ACF field group array from JSON
+ * @return array List of repeater field names
+ */
+function scout_extract_repeater_fields($field_group) {
+    $repeater_fields = [];
+    
+    if (empty($field_group['fields']) || !is_array($field_group['fields'])) {
+        return $repeater_fields;
+    }
+    
+    foreach ($field_group['fields'] as $field) {
+        if (!is_array($field)) {
+            continue;
+        }
+        
+        // Check if this field is a repeater
+        if (($field['type'] ?? '') === 'repeater' && !empty($field['name'])) {
+            $repeater_fields[] = $field['name'];
+        }
+    }
+    
+    return $repeater_fields;
+}
+
+/**
+ * Register block data in post meta for ACF editor and render templates
+ * 
+ * Block attributes store data in flat format (highlights_0_eyebrow, etc.)
+ * Post meta stores data in formats that ACF and render templates expect
+ */
+function scout_register_repeater_fields($post_id, $layout) {
+    foreach ($layout as $blockIndex => $block) {
+        $block_type = str_replace('carimus/', '', $block['block']);
+        $isLastBlock = ($blockIndex === count($layout) - 1);
+        $bottomPadding = $isLastBlock ? 'none' : 'lg';
+        
+        // Store padding in nested format for render templates
+        // Render templates call get_field('padding') and ACF looks in post meta
+        $padding_nested = [
+            'top' => [
+                'desktop' => 'none',
+                'desktop_custom' => '',
+                'tablet' => 'none',
+                'tablet_custom' => '',
+                'mobile' => 'none',
+                'mobile_custom' => ''
+            ],
+            'bottom' => [
+                'desktop' => $bottomPadding,
+                'desktop_custom' => '',
+                'tablet' => $bottomPadding,
+                'tablet_custom' => '',
+                'mobile' => $bottomPadding,
+                'mobile_custom' => ''
+            ]
+        ];
+        
+        update_post_meta($post_id, 'padding', $padding_nested);
     }
 }
 
