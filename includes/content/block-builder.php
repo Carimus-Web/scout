@@ -43,16 +43,30 @@ function scout_build_blocks($layout, $postType = null) {
     // Get allowed blocks to check field types for WYSIWYG fields
     $allowed_blocks = [];
     $field_types_map = [];
+    $field_keys_map = [];  // Map field names to ACF field keys
     if ($postType) {
         $allowed_blocks = scout_get_allowed_blocks($postType);
-        // Build map of block names to field types
+        // Build map of block names to field types and keys
         foreach ($allowed_blocks as $block) {
             if (!empty($block['acf']['fields'])) {
                 foreach ($block['acf']['fields'] as $field) {
                     $field_name = $field['name'] ?? $field['key'] ?? '';
                     $field_type = $field['type'] ?? '';
+                    $field_key = $field['key'] ?? '';
                     if ($field_name) {
                         $field_types_map[$block['name']][$field_name] = $field_type;
+                        $field_keys_map[$block['name']][$field_name] = $field_key;
+                        
+                        // Also map sub-fields for repeaters
+                        if ($field_type === 'repeater' && !empty($field['sub_fields'])) {
+                            foreach ($field['sub_fields'] as $sub_field) {
+                                $sub_field_name = $sub_field['name'] ?? '';
+                                $sub_field_key = $sub_field['key'] ?? '';
+                                if ($sub_field_name) {
+                                    $field_keys_map[$block['name']][$field_name . '__' . $sub_field_name] = $sub_field_key;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -61,42 +75,108 @@ function scout_build_blocks($layout, $postType = null) {
 
     $totalBlocks = count($layout);
     
+    // Debug logging for repeater fields
+    error_log('scout_build_blocks: Processing ' . count($layout) . ' blocks');
+    foreach ($layout as $b) {
+        if ($b['block'] === 'carimus/what-we-do' || $b['block'] === 'carimus/highlights' || $b['block'] === 'carimus/copy-with-columns') {
+            error_log('scout_build_blocks: Block ' . $b['block'] . ' fields: ' . json_encode(array_keys($b['fields'] ?? [])));
+            foreach ($b['fields'] ?? [] as $fname => $fval) {
+                if (is_array($fval)) {
+                    error_log('  - ' . $fname . ' is array with ' . count($fval) . ' items');
+                } else {
+                    error_log('  - ' . $fname . ' is ' . gettype($fval));
+                }
+            }
+        }
+    }
+    
     foreach ($layout as $blockIndex => $block) {
 
         $fields = $block['fields'];
+        $block_type = str_replace('carimus/', '', $block['block']);
         
-        // Clean WYSIWYG fields by removing wrapping tags
-        // WYSIWYG fields should contain inner content; the render template uses wpautop() to format
-        if (!empty($field_types_map[$block['block']])) {
-            foreach ($fields as $field_name => &$field_value) {
-                $field_type = $field_types_map[$block['block']][$field_name] ?? '';
-                // For WYSIWYG and similar rich text fields, clean wrapping tags
-                if (in_array($field_type, ['wysiwyg', 'richtext', 'html'])) {
+        // Build block data in ACF Pro's flat format (matching manual block creation)
+        $acf_fields = [];
+        
+        // Process all fields
+        foreach ($fields as $field_name => $field_value) {
+            $field_type = $field_types_map[$block['block']][$field_name] ?? '';
+            $field_key = $field_keys_map[$block['block']][$field_name] ?? '';
+            
+            // Handle repeater fields - store in flat format like ACF Pro does
+            if ($field_type === 'repeater') {
+                if (!is_array($field_value)) {
                     if (is_string($field_value)) {
-                        // Remove wrapping <p> tags so the render template can properly format
-                        $field_value = scout_clean_wysiwyg_content($field_value);
+                        $decoded = json_decode($field_value, true);
+                        $field_value = is_array($decoded) ? $decoded : [];
+                    } else {
+                        $field_value = [];
                     }
                 }
+                
+                // Store row count
+                $acf_fields[$field_name] = count($field_value);
+                
+                // Store field key with underscore prefix
+                if ($field_key) {
+                    $acf_fields['_' . $field_name] = $field_key;
+                }
+                
+                // Flatten repeater rows to ACF Pro format: field_name_0_subfield
+                foreach ($field_value as $row_index => $row) {
+                    if (is_array($row)) {
+                        foreach ($row as $sub_field_name => $sub_field_value) {
+                            // Get the ACF sub-field key
+                            $sub_field_key = $field_keys_map[$block['block']][$field_name . '__' . $sub_field_name] ?? '';
+                            
+                            // Clean WYSIWYG-like sub-fields
+                            if (is_string($sub_field_value) && (strpos($sub_field_value, '<') !== false || strpos($sub_field_value, 'u003c') !== false)) {
+                                $sub_field_value = scout_clean_wysiwyg_content($sub_field_value);
+                            }
+                            
+                            // Store value with flat key
+                            $flat_key = $field_name . '_' . $row_index . '_' . $sub_field_name;
+                            $acf_fields[$flat_key] = $sub_field_value;
+                            
+                            // Store field key with underscore prefix
+                            if ($sub_field_key) {
+                                $acf_fields['_' . $flat_key] = $sub_field_key;
+                            }
+                        }
+                    }
+                }
+            } 
+            // For WYSIWYG and similar rich text fields (non-repeater), clean wrapping tags
+            elseif (in_array($field_type, ['wysiwyg', 'richtext', 'html'])) {
+                if (is_string($field_value)) {
+                    $field_value = scout_clean_wysiwyg_content($field_value);
+                }
+                $acf_fields[$field_name] = $field_value;
+                if ($field_key) {
+                    $acf_fields['_' . $field_name] = $field_key;
+                }
             }
-            unset($field_value);
+            // For all other fields
+            else {
+                $acf_fields[$field_name] = $field_value;
+                if ($field_key) {
+                    $acf_fields['_' . $field_name] = $field_key;
+                }
+            }
         }
-
+        
         // Handle image field
-        // Claude returns image IDs - convert to full ACF image array
-        // This is what theme's get_field('image') will return
         if (isset($block['image'])) {
             if (is_numeric($block['image']) && $block['image'] > 0) {
-                // Convert attachment ID to full ACF image array
                 $image_array = scout_attachment_id_to_acf_image($block['image']);
                 if ($image_array) {
-                    $fields['image'] = $image_array;
+                    $acf_fields['image'] = $image_array;
                 }
             } elseif (!empty($block['image'])) {
-                // Fallback: pick random image if image is just true
                 $random_id = scout_get_placeholder_image();
                 $image_array = scout_attachment_id_to_acf_image($random_id);
                 if ($image_array) {
-                    $fields['image'] = $image_array;
+                    $acf_fields['image'] = $image_array;
                 }
             }
         }
@@ -105,10 +185,8 @@ function scout_build_blocks($layout, $postType = null) {
         $isLastBlock = ($blockIndex === $totalBlocks - 1);
         $bottomPadding = $isLastBlock ? 'none' : 'lg';
 
-        // Add padding settings to every section
-        // Top padding is always 'none', bottom padding depends on block position
-        // These are top-level fields that the render template accesses via get_field('padding')
-        $fields['padding'] = [
+        // Add padding as nested structure (for render template compatibility)
+        $acf_fields['padding'] = [
             'top' => [
                 'desktop' => 'none',
                 'desktop_custom' => '',
@@ -126,15 +204,21 @@ function scout_build_blocks($layout, $postType = null) {
                 'mobile_custom' => ''
             ]
         ];
-
-        // Add settings field if needed by the block
-        $fields['settings'] = [
-            'padding' => $fields['padding']
+        
+        // Add settings field
+        $acf_fields['settings'] = [
+            'padding' => $acf_fields['padding'],
+            'id' => '',
+            'z-index' => 'auto'
         ];
 
         $blocks[] = [
             'blockName' => $block['block'],
-            'attrs' => ['data' => $fields],
+            'attrs' => [
+                'name' => $block['block'],
+                'mode' => 'auto',
+                'data' => $acf_fields
+            ],
             'innerBlocks' => []
         ];
     }

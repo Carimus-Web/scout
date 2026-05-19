@@ -1,6 +1,7 @@
 <?php
 
 require_once SCOUT_PATH . 'includes/content/block-builder.php';
+require_once SCOUT_PATH . 'includes/content/post-creator-helper.php';
 require_once SCOUT_PATH . 'includes/media/placeholder.php';
 
 function scout_create_post($postType, $layout) {
@@ -35,6 +36,10 @@ function scout_create_post($postType, $layout) {
     }
 
     error_log('Post content updated successfully');
+    
+    // Register repeater fields in post meta so ACF can find them during editing
+    scout_register_repeater_fields($post_id, $layout);
+    
     return $post_id;
 }
 
@@ -65,5 +70,9 @@ function scout_update_post($post_id, $layout) {
     }
 
     error_log('Post content updated successfully');
+    
+    // Register repeater fields in post meta so ACF can find them during editing
+    scout_register_repeater_fields($post_id, $layout);
+    
     return $post_id;
 }
