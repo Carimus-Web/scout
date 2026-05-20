@@ -74,7 +74,8 @@ function scout_build_prompt($messages, $allowed_blocks) {
             "5. Do NOT suggest removing or changing blocks - work with what's available\n" .
             "6. If you don't have enough information, ask clarifying questions\n" .
             "7. Do NOT include emojis in any field values - keep content professional and text-only\n" .
-            "8. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
+            "8. For WYSIWYG and richtext fields: DO NOT include any HTML markup (no <p>, <b>, <i>, etc.) - only plain text and line breaks\n" .
+            "9. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
             "IMAGE HANDLING:\n" .
             "- For blocks marked [SUPPORTS IMAGES], pick an image ID from the available media library that matches the content context\n" .
             "- Use the image ID (not URL) in the JSON response\n" .

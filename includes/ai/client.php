@@ -89,7 +89,10 @@ function scout_ai_anthropic($messages, $allowed_blocks) {
 
     $decoded = json_decode($content, true);
     if ($decoded) {
-        // Layout will be cleaned in scout_build_blocks to remove wrapping HTML tags
+        // Decode WYSIWYG fields that may have encoded HTML entities
+        if (!empty($decoded['layout'])) {
+            $decoded['layout'] = scout_unescape_wysiwyg_fields($decoded['layout'], $allowed_blocks);
+        }
         return $decoded;
     }
 
@@ -203,4 +206,76 @@ function scout_ai_google($messages, $allowed_blocks) {
     }
     
     return ['message' => $content];
+}
+
+/**
+ * Decode HTML entities in WYSIWYG fields that may have been escaped or encoded improperly
+ * Handles both unicode escape sequences (\u003c) and literal entity strings (u003c)
+ * 
+ * @param array $layout The layout array from AI response
+ * @param array $allowed_blocks The allowed blocks configuration
+ * @return array The layout with decoded WYSIWYG content
+ */
+function scout_unescape_wysiwyg_fields($layout, $allowed_blocks) {
+    if (!is_array($layout)) {
+        return $layout;
+    }
+
+    foreach ($layout as $block_index => $block) {
+        if (!is_array($block) || empty($block['block'])) {
+            continue;
+        }
+
+        $block_type = str_replace('carimus/', '', $block['block']);
+        
+        // Get field configuration for this block type
+        if (!isset($allowed_blocks[$block_type])) {
+            continue;
+        }
+
+        $block_config = $allowed_blocks[$block_type];
+        
+        // Check each field in the block
+        foreach ($block as $field_name => $field_value) {
+            if (!is_string($field_value)) {
+                continue;
+            }
+
+            // Decode HTML entities in string fields
+            $field_value = scout_decode_html_entities($field_value);
+            $layout[$block_index][$field_name] = $field_value;
+        }
+    }
+
+    return $layout;
+}
+
+/**
+ * Decode improperly encoded HTML entities
+ * Converts u003c/u003e to </> and handles other unicode escape sequences
+ * 
+ * @param string $content The content to decode
+ * @return string The decoded content
+ */
+function scout_decode_html_entities($content) {
+    if (!is_string($content)) {
+        return $content;
+    }
+
+    // Replace literal u003c with <
+    $content = str_replace('u003c', '<', $content);
+    // Replace literal u003e with >
+    $content = str_replace('u003e', '>', $content);
+    // Replace literal u0026 with &
+    $content = str_replace('u0026', '&', $content);
+    // Replace literal u0022 with "
+    $content = str_replace('u0022', '"', $content);
+    // Replace literal u0027 with '
+    $content = str_replace('u0027', "'", $content);
+    // Replace literal \u00xx sequences with their unicode equivalents
+    $content = preg_replace_callback('/\\\\u([0-9a-f]{4})/i', function($matches) {
+        return chr(hexdec($matches[1]));
+    }, $content);
+
+    return $content;
 }
