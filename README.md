@@ -34,6 +34,7 @@ Scout is a WordPress plugin that uses AI to generate first drafts of pages using
 scout/
 ├── scout.php              # Main plugin file
 ├── composer.json            # Composer package configuration
+├── README.md                # This file
 ├── assets/
 │   └── js/
 │       └── app.js           # Frontend chat application
@@ -53,9 +54,14 @@ scout/
 │   ├── blocks/              # Block management
 │   │   ├── allowed.php      # Block discovery from theme
 │   │   └── validator.php    # Block validation logic
-│   └── content/             # Content generation
-│       ├── block-builder.php    # WordPress block builder
-│       └── post-creator.php     # Post creation logic
+│   ├── content/             # Content generation
+│   │   ├── block-builder.php    # WordPress block builder
+│   │   ├── post-creator.php     # Post creation logic
+│   │   └── post-creator-helper.php  # Helper functions
+│   ├── media/               # Media library utilities
+│   │   └── placeholder.php  # Image selection and conversion
+│   └── updates/             # Plugin update checker
+│       └── plugin-update-checker.php # GitHub release auto-updates
 └── readme.txt
 ```
 
@@ -142,6 +148,15 @@ Get API key: [https://platform.openai.com/api-keys](https://platform.openai.com/
 
 Get API key: [https://aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
 
+#### WYSIWYG & Rich Text Field Handling
+
+Scout is specially configured to handle WYSIWYG and rich text fields correctly:
+
+- **AI Constraint:** The system prompt explicitly instructs the AI to provide **plain text only** for WYSIWYG fields—no HTML markup like `<p>`, `<b>`, `<i>`, etc.
+- **HTML Entity Decoding:** If any HTML entities are accidentally encoded during transmission, Scout automatically decodes them
+- **HTML Stripping:** During block building, any remaining HTML tags are removed from WYSIWYG content, preserving only plain text
+- **Result:** Your WYSIWYG fields display clean, properly formatted text without encoded entity artifacts
+
 ### Setup
 
 1. Activate the Scout plugin in WordPress
@@ -196,13 +211,14 @@ Handles communication with the selected AI provider, sending:
 - User messages and post type
 - Complete block metadata with ACF field schemas
 - Constraints and allowed field values
+- Special instructions: WYSIWYG fields receive **plain text only, no HTML markup**
 
 Configuration priority:
 
 1. WordPress Settings (if configured via admin)
 2. Environment variables (fallback)
 
-Processes the AI response containing block layouts with populated ACF fields.
+Processes the AI response containing block layouts with populated ACF fields. Automatically decodes any HTML entities that may have been escaped during transmission.
 
 ### Chat Controller (`includes/api/chat-controller.php`)
 
@@ -218,6 +234,13 @@ Main request handler that orchestrates the flow:
 ### Block Builder (`includes/content/block-builder.php`)
 
 Converts AI-generated layouts into WordPress block format using the Block API.
+
+- Reads ACF field definitions from the theme's block.json files
+- Maps AI-generated data to the nested structure ACF blocks require
+- Handles repeater fields with proper row indexing
+- **WYSIWYG Field Handling:** Strips any remaining HTML tags from WYSIWYG/richtext fields, storing only plain text
+- Properly structures padding, settings, and other block-level metadata
+- Converts the block structure into serialized format for WordPress post_content
 
 ### Block Validator (`includes/blocks/validator.php`)
 
@@ -364,12 +387,80 @@ Scout is licensed under the [GNU General Public License v2.0 or later](https://w
 
 ## Versioning & Updates
 
-Scout uses semantic versioning (MAJOR.MINOR.PATCH). You can track and update the plugin across multiple installations using:
+Scout uses semantic versioning (MAJOR.MINOR.PATCH).
 
-### Option 1: Composer (Recommended for Development)
+### Automatic Updates (Recommended)
+
+Scout includes automatic update checking via GitHub releases. **Your GitHub repository must be public** for WordPress sites to detect and install updates automatically.
+
+**How it works:**
+1. Scout checks your GitHub repo for new releases (at the URL in `Plugin URI`)
+2. When a new release is available, WordPress shows an update notification on the Plugins page
+3. Users click "Update Now" to install the latest version
+4. Updates happen automatically with a single click
+
+When you create a GitHub release with a tag matching a version number, WordPress sites with Scout installed will automatically detect and offer the update:
+
+1. User goes to Plugins page in WordPress admin
+2. Scout update appears in the list (if available)
+3. Click "Update Now" to install the latest version
+4. WordPress downloads the release and activates it
+
+This works automatically—no additional setup required beyond creating releases.
+
+### Creating a Release for Distribution
+
+To release a new version of Scout:
+
+#### Step 1: Update Version Numbers
+
+Update both locations:
+
+1. **In `scout.php`:**
+   ```php
+   define('SCOUT_VERSION', '1.1.0');
+   ```
+
+2. **In `composer.json`:**
+   ```json
+   "version": "1.1.0",
+   ```
+
+#### Step 2: Commit and Tag
 
 ```bash
-composer require carimus/scout:^1.0
+# Commit your changes
+git add scout.php composer.json
+git commit -m "Release version 1.1.0"
+
+# Create a git tag matching the version
+git tag v1.1.0
+
+# Push both commit and tag to GitHub
+git push origin main
+git push origin v1.1.0
+```
+
+#### Step 3: Create GitHub Release
+
+1. Go to [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
+2. Click **"Draft a new release"**
+3. Select the tag you just created (`v1.1.0`)
+4. Add a title: `Scout 1.1.0` (or similar)
+5. Add release notes describing what changed (bugfixes, new features, etc.)
+6. Click **"Publish release"**
+
+Once published:
+- WordPress sites will detect the update automatically
+- Users can update from their Plugins page
+- The release is available for manual download as well
+
+### Manual Update Methods
+
+#### Option 1: Composer (Development/Staging)
+
+```bash
+composer require carimus/scout:^1.1
 ```
 
 Update with:
@@ -378,38 +469,28 @@ Update with:
 composer update carimus/scout
 ```
 
-### Option 2: GitHub Releases (Manual Updates)
+#### Option 2: Manual Download
 
 Download releases from: [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
 
-### Option 3: WordPress.org Plugin Repository (Future)
+Then SFTP to your server and extract the plugin files.
+
+#### Option 3: WordPress.org Plugin Repository (Future)
 
 Once submitted to the WordPress.org plugin repository, updates will be managed directly from the WordPress admin.
 
-### Updating the Version
+### SFTP Deployment
 
-To release a new version:
+When you need to update the plugin on a live WordPress site:
 
-1. Update version number in `scout.php`:
+1. Download the latest release from GitHub or build from source
+2. SFTP the plugin files to `wp-content/plugins/scout/`
+3. Go to WordPress admin → Plugins
+4. Deactivate Scout if needed
+5. Activate Scout (or it will auto-activate if already active)
+6. The latest version is now live
 
-    ```php
-    define('SCOUT_VERSION', '1.1.0');
-    ```
-
-2. Update version in `composer.json`:
-
-    ```json
-    "version": "1.1.0",
-    ```
-
-3. Create a git tag:
-
-    ```bash
-    git tag v1.1.0
-    git push origin v1.1.0
-    ```
-
-4. Create a release on GitHub with changelog
+**Note:** Scout will automatically check for GitHub updates, so SFTP is only needed for initial deployment or if automatic updates are disabled.
 
 ## Support
 

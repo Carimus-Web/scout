@@ -18,14 +18,6 @@ define('SCOUT_VERSION', '1.0.1');
 define('SCOUT_PATH', plugin_dir_path(__FILE__));
 define('SCOUT_URL', plugin_dir_url(__FILE__));
 
-// Setup GitHub plugin updates
-require_once SCOUT_PATH . 'includes/updates/plugin-update-checker.php';
-$scout_update_checker = Puc_v4_Factory::buildUpdateChecker(
-    'https://github.com/carimus/scout/',
-    __FILE__,
-    'scout'
-);
-
 // Admin
 require_once SCOUT_PATH . 'includes/admin/menu.php';
 require_once SCOUT_PATH . 'includes/admin/styles.php';
