@@ -1,5 +1,10 @@
 # Scout – AI Content Draft Generator
 
+![Version](https://img.shields.io/badge/v1.0.2-blue)
+![License](https://img.shields.io/badge/license-GPL--2.0+-green)
+![PHP](https://img.shields.io/badge/php-7.4+-purple)
+![WordPress](https://img.shields.io/badge/wordpress-6.0+-blue)
+
 Scout is a WordPress plugin that uses AI to generate first drafts of pages using only the blocks and post types available in your Carimus Backbone theme. It acts as a **content writer**, not a designer—creating initial page content that your team can refine and perfect. Scout reads block definitions directly from the WordPress block registry and strictly enforces that only allowed blocks and fields are used. The result is always saved as a draft, giving you full control over the final version.
 
 ## Features
@@ -408,59 +413,43 @@ When you create a GitHub release with a tag matching a version number, WordPress
 
 This works automatically—no additional setup required beyond creating releases.
 
-### Creating a Release for Distribution
+### Creating a Release
 
-To release a new version of Scout:
-
-#### Step 1: Update Version Numbers
-
-Update both locations:
-
-1. **In `scout.php`:**
-   ```php
-   define('SCOUT_VERSION', '1.1.0');
-   ```
-
-2. **In `composer.json`:**
-   ```json
-   "version": "1.1.0",
-   ```
-
-#### Step 2: Commit and Tag
+Releases are automated via GitHub Actions. Simply push a semantic version tag and everything else happens automatically:
 
 ```bash
-# Commit your changes
-git add scout.php composer.json
-git commit -m "Release version 1.1.0"
-
-# Create a git tag matching the version
-git tag v1.1.0
-
-# Push both commit and tag to GitHub
+# Push changes to main branch
+git add .
+git commit -m "Your changes"
 git push origin main
-git push origin v1.1.0
+
+# Create and push a version tag (e.g., v1.0.3)
+git tag v1.0.3
+git push origin v1.0.3
 ```
 
-#### Step 3: Create GitHub Release
+When the tag is pushed, GitHub Actions will automatically:
 
-1. Go to [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
-2. Click **"Draft a new release"**
-3. Select the tag you just created (`v1.1.0`)
-4. Add a title: `Scout 1.1.0` (or similar)
-5. Add release notes describing what changed (bugfixes, new features, etc.)
-6. Click **"Publish release"**
+1. **Update version numbers**
+   - `scout.php` → `Version: 1.0.3` and `define('SCOUT_VERSION', '1.0.3')`
+   - `composer.json` → `"version": "1.0.3"`
 
-Once published:
-- WordPress sites will detect the update automatically
-- Users can update from their Plugins page
-- The release is available for manual download as well
+2. **Update README badge** with the new version
+
+3. **Commit changes** with message "chore: bump version to 1.0.3"
+
+4. **Create a GitHub Release** with downloadable plugin files
+
+5. **WordPress sites** will automatically detect the update and show "Update Available" on the Plugins page
+
+**That's it!** Users can then click "Update Now" in WordPress to install the latest version.
 
 ### Manual Update Methods
 
 #### Option 1: Composer (Development/Staging)
 
 ```bash
-composer require carimus/scout:^1.1
+composer require carimus/scout:^1.0
 ```
 
 Update with:
@@ -469,28 +458,15 @@ Update with:
 composer update carimus/scout
 ```
 
-#### Option 2: Manual Download
+#### Option 2: Manual SFTP Download
 
-Download releases from: [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
-
-Then SFTP to your server and extract the plugin files.
+1. Download the latest release from: [https://github.com/carimus/scout/releases](https://github.com/carimus/scout/releases)
+2. SFTP the plugin files to your WordPress site: `wp-content/plugins/scout/`
+3. Activate in WordPress admin (if not already active)
 
 #### Option 3: WordPress.org Plugin Repository (Future)
 
-Once submitted to the WordPress.org plugin repository, updates will be managed directly from the WordPress admin.
-
-### SFTP Deployment
-
-When you need to update the plugin on a live WordPress site:
-
-1. Download the latest release from GitHub or build from source
-2. SFTP the plugin files to `wp-content/plugins/scout/`
-3. Go to WordPress admin → Plugins
-4. Deactivate Scout if needed
-5. Activate Scout (or it will auto-activate if already active)
-6. The latest version is now live
-
-**Note:** Scout will automatically check for GitHub updates, so SFTP is only needed for initial deployment or if automatic updates are disabled.
+Once submitted to the WordPress.org plugin repository, updates will be managed directly from the WordPress admin without any additional setup.
 
 ## Support
 

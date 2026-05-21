@@ -25,6 +25,7 @@ require_once SCOUT_PATH . 'includes/admin/assets.php';
 require_once SCOUT_PATH . 'includes/admin/page.php';
 require_once SCOUT_PATH . 'includes/admin/settings-config.php';
 require_once SCOUT_PATH . 'includes/admin/settings-page.php';
+require_once SCOUT_PATH . 'includes/admin/update-checker.php';
 
 // API
 require_once SCOUT_PATH . 'includes/api/chat-controller.php';
