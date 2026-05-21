@@ -489,13 +489,23 @@ async function submitMessage() {
         try {
             let cleanContent = replyContent.trim();
 
-            // Remove markdown code fence markers (```json ... ```)
-            cleanContent = cleanContent.replace(/^```[\w]*\n?/i, ''); // Remove opening ```json or ```
-            cleanContent = cleanContent.replace(/\n?```$/i, ''); // Remove closing ```
-
-            // Also handle inline backticks
-            cleanContent = cleanContent.replace(/^`[\w]*\n?/i, ''); // Remove opening backtick
-            cleanContent = cleanContent.replace(/\n?`$/i, ''); // Remove closing backtick
+            // First, try to extract JSON block from markdown code fences
+            let jsonMatch = cleanContent.match(/```[\w]*\n?([\s\S]*?)\n?```/);
+            if (jsonMatch && jsonMatch[1]) {
+                cleanContent = jsonMatch[1].trim();
+            } else {
+                // Try single backticks as fallback
+                jsonMatch = cleanContent.match(/`([\s\S]*?)`/);
+                if (jsonMatch && jsonMatch[1]) {
+                    cleanContent = jsonMatch[1].trim();
+                } else {
+                    // Try to find JSON object anywhere in the message using regex
+                    jsonMatch = cleanContent.match(/\{[\s\S]*"layout"[\s\S]*\}/);
+                    if (jsonMatch) {
+                        cleanContent = jsonMatch[0];
+                    }
+                }
+            }
 
             cleanContent = cleanContent.trim();
 
