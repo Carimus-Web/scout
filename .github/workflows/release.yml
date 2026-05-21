@@ -59,20 +59,17 @@ jobs:
             scout.php
             composer.json
             README.md
-            scout.php
-            includes/**
-            assets/**
           body: |
             ## Scout Plugin v${{ steps.version.outputs.version }}
             
             ### Installation
-            - Download the release files
+            - Download the full plugin from the repository
             - SFTP to your WordPress site: `wp-content/plugins/scout/`
             - Activate in WordPress admin
             
             ### Updates
             Scout automatically checks this repository for new releases. WordPress sites with Scout installed will show an update notification when new versions are available.
             
-            For changelog details, see the commit history.
+            For full details and changelog, see the commit history.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
