@@ -36,12 +36,22 @@ function scout_get_allowed_blocks($postType) {
     }
     
     // Apply theme's allowed_blocks filter to respect post-type restrictions
-    $theme_allowed = apply_filters('allowed_block_types_all', true, (object)['post' => (object)['post_type' => $postType]]);
+    // Create a post object similar to what WordPress expects
+    $post_obj = (object)[];
+    $post_obj->post_type = $postType;
+    
+    $theme_allowed = apply_filters('allowed_block_types_all', true, $post_obj);
     
     if (is_array($theme_allowed) && !empty($theme_allowed)) {
         $allowed_blocks = array_filter($allowed_blocks, function($block) use ($theme_allowed) {
             return in_array($block['name'], $theme_allowed);
         });
+        
+        // FALLBACK: If filtering resulted in no blocks for posts, use all discovered blocks
+        // This handles the case where theme restricts 'post' but we want to show blocks for AI
+        if (empty($allowed_blocks) && $postType === 'post') {
+            $allowed_blocks = scout_discover_blocks_from_theme();
+        }
     }
     
     return array_values($allowed_blocks);

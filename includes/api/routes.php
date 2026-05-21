@@ -2,15 +2,12 @@
 
 // All includes handled in main scout.php file
 
-// Ensure blocks are initialized for REST API context
+// Register REST routes on rest_api_init hook (required by WordPress)
 add_action('rest_api_init', function () {
     // Force block editor initialization in REST context
     do_action('enqueue_block_editor_assets');
-});
-
-add_action('wp_loaded', function () {
-    // Register REST routes after WordPress has fully loaded
-    // This ensures blocks from themes/plugins are registered first
+    
+    // Register test endpoint
     register_rest_route('scout/v1', '/test', [
         'methods' => 'POST',
         'callback' => function($request) {

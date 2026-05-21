@@ -47,6 +47,13 @@ function scout_build_prompt($messages, $allowed_blocks) {
                 $blocks_description .= "  - {$field_label} ({$field_name}): {$field_type}\n";
             }
         }
+        // Fallback: Extract field names from example data (for auto mode ACF blocks)
+        else if (!empty($block['example']['attributes']['data']) && is_array($block['example']['attributes']['data'])) {
+            $blocks_description .= "Fields:\n";
+            foreach (array_keys($block['example']['attributes']['data']) as $field_name) {
+                $blocks_description .= "  - {$field_name}\n";
+            }
+        }
         
         // Include example data if available
         if (!empty($block['example']['attributes']['data'])) {

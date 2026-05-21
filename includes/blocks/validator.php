@@ -26,6 +26,10 @@ function scout_validate_layout($layout, $allowed_blocks) {
                     $valid_fields[] = $field_name;
                 }
             }
+        } 
+        // Fallback: Extract field names from example data (for auto mode ACF blocks)
+        else if (!empty($block['example']['attributes']['data']) && is_array($block['example']['attributes']['data'])) {
+            $valid_fields = array_keys($block['example']['attributes']['data']);
         }
         
         $allowed_map[$block['name']] = $valid_fields;
