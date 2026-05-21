@@ -399,6 +399,7 @@ Scout uses semantic versioning (MAJOR.MINOR.PATCH).
 Scout includes automatic update checking via GitHub releases. **Your GitHub repository must be public** for WordPress sites to detect and install updates automatically.
 
 **How it works:**
+
 1. Scout checks your GitHub repo for new releases (at the URL in `Plugin URI`)
 2. When a new release is available, WordPress shows an update notification on the Plugins page
 3. Users click "Update Now" to install the latest version
@@ -431,8 +432,8 @@ git push origin v1.0.3
 When the tag is pushed, GitHub Actions will automatically:
 
 1. **Update version numbers**
-   - `scout.php` → `Version: 1.0.3` and `define('SCOUT_VERSION', '1.0.3')`
-   - `composer.json` → `"version": "1.0.3"`
+    - `scout.php` → `Version: 1.0.3` and `define('SCOUT_VERSION', '1.0.3')`
+    - `composer.json` → `"version": "1.0.3"`
 
 2. **Update README badge** with the new version
 
