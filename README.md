@@ -1,6 +1,6 @@
 # Scout – AI Content Draft Generator
 
-![Version](https://img.shields.io/badge/v1.0.9-blue)
+![Version](https://img.shields.io/badge/v1.0.10-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0+-green)
 ![PHP](https://img.shields.io/badge/php-7.4+-purple)
 ![WordPress](https://img.shields.io/badge/wordpress-6.0+-blue)
