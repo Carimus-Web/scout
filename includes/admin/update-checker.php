@@ -46,14 +46,10 @@ function scout_check_for_updates() {
 }
 
 /**
- * Debug function to check update status (admin only)
- * Call this to see what's happening with version checking
+ * Debug function to check update status
+ * Returns version comparison info for debugging
  */
 function scout_debug_update_status() {
-    if (!current_user_can('manage_options')) {
-        return;
-    }
-    
     $github_repo = 'Carimus-Web/scout';
     $current_version = SCOUT_VERSION;
     

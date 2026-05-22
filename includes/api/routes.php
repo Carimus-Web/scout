@@ -102,10 +102,6 @@ add_action('rest_api_init', function () {
     register_rest_route('scout/v1', '/check-update', [
         'methods' => 'GET',
         'callback' => function($request) {
-            if (!current_user_can('manage_options')) {
-                return new WP_Error('unauthorized', 'You do not have permission to check updates.', ['status' => 403]);
-            }
-            
             // Clear transient cache to force fresh check
             delete_transient('scout_update_check');
             
