@@ -500,7 +500,9 @@ async function submitMessage() {
                     cleanContent = jsonMatch[1].trim();
                 } else {
                     // Try to find JSON object anywhere in the message using regex
-                    jsonMatch = cleanContent.match(/\{[\s\S]*"layout"[\s\S]*\}/);
+                    jsonMatch = cleanContent.match(
+                        /\{[\s\S]*"layout"[\s\S]*\}/,
+                    );
                     if (jsonMatch) {
                         cleanContent = jsonMatch[0];
                     }

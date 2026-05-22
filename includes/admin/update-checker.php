@@ -6,7 +6,7 @@
  */
 
 function scout_check_for_updates() {
-    $github_repo = 'carimus/scout';
+    $github_repo = 'Carimus-Web/scout';
     $current_version = SCOUT_VERSION;
     
     // Check GitHub API for latest release
