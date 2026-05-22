@@ -1,7 +1,7 @@
 {
     "name": "carimus/scout",
     "description": "AI-powered content draft generator for WordPress using Carimus Backbone theme blocks",
-    "version": "1.0.13",
+    "version": "1.0.14",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [
