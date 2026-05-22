@@ -46,6 +46,48 @@ function scout_check_for_updates() {
 }
 
 /**
+ * Debug function to check update status (admin only)
+ * Call this to see what's happening with version checking
+ */
+function scout_debug_update_status() {
+    if (!current_user_can('manage_options')) {
+        return;
+    }
+    
+    $github_repo = 'Carimus-Web/scout';
+    $current_version = SCOUT_VERSION;
+    
+    // Get latest release info
+    $response = wp_remote_get("https://api.github.com/repos/{$github_repo}/releases/latest", [
+        'timeout' => 10,
+        'sslverify' => true
+    ]);
+    
+    if (is_wp_error($response)) {
+        return ['error' => 'Failed to fetch from GitHub: ' . $response->get_error_message()];
+    }
+    
+    $release = json_decode(wp_remote_retrieve_body($response), true);
+    
+    if (!$release) {
+        return ['error' => 'Invalid GitHub API response'];
+    }
+    
+    $remote_version = ltrim($release['tag_name'] ?? '', 'v');
+    
+    return [
+        'current_version' => $current_version,
+        'remote_version' => $remote_version,
+        'remote_tag' => $release['tag_name'] ?? 'not found',
+        'release_url' => $release['html_url'] ?? 'not found',
+        'is_prerelease' => $release['prerelease'] ?? false,
+        'is_draft' => $release['draft'] ?? false,
+        'version_comparison' => version_compare($remote_version, $current_version, '>') ? 'Update available' : 'No update needed',
+        'transient_cache' => get_transient('scout_update_check'),
+    ];
+}
+
+/**
  * Register the update with WordPress
  */
 function scout_register_plugin_update($transient) {

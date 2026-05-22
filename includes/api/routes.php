@@ -98,4 +98,21 @@ add_action('rest_api_init', function () {
         },
         'permission_callback' => '__return_true',
     ]);
+    
+    register_rest_route('scout/v1', '/check-update', [
+        'methods' => 'GET',
+        'callback' => function($request) {
+            if (!current_user_can('manage_options')) {
+                return new WP_Error('unauthorized', 'You do not have permission to check updates.', ['status' => 403]);
+            }
+            
+            // Clear transient cache to force fresh check
+            delete_transient('scout_update_check');
+            
+            // Get debug info
+            require_once SCOUT_PATH . 'includes/admin/update-checker.php';
+            return scout_debug_update_status();
+        },
+        'permission_callback' => '__return_true',
+    ]);
 });
