@@ -115,4 +115,34 @@ function scout_register_plugin_update($transient) {
     return $transient;
 }
 
+/**
+ * Rename the extracted plugin folder to match the plugin slug
+ * GitHub zipball extracts as "Carimus-Web-scout-<hash>" but WordPress expects "scout"
+ */
+function scout_upgrade_source_selection($source, $remote_source, $upgrader) {
+    global $wp_filesystem;
+    
+    // Check if this is a Scout plugin update
+    if (isset($upgrader->skin->plugin)) {
+        if (strpos($upgrader->skin->plugin, 'scout') === false) {
+            return $source;
+        }
+    }
+    
+    // If source is already named "scout", no need to rename
+    if (basename($source) === 'scout') {
+        return $source;
+    }
+    
+    // Rename the folder to "scout"
+    $new_source = trailingslashit($remote_source) . 'scout';
+    
+    if ($wp_filesystem->move($source, $new_source)) {
+        return $new_source;
+    }
+    
+    return $source;
+}
+
+add_filter('upgrader_source_selection', 'scout_upgrade_source_selection', 10, 3);
 add_filter('site_transient_update_plugins', 'scout_register_plugin_update');
