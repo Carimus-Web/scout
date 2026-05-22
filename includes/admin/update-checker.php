@@ -91,7 +91,8 @@ function scout_register_plugin_update($transient) {
         return $transient;
     }
     
-    $plugin_file = plugin_basename(SCOUT_PATH . '../scout.php');
+    // Correct plugin file path: scout/scout.php
+    $plugin_file = 'scout/scout.php';
     
     // Only check if Scout is in the checked list
     if (!isset($transient->checked[$plugin_file])) {
