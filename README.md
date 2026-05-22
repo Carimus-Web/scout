@@ -37,35 +37,35 @@ Scout is a WordPress plugin that uses AI to generate first drafts of pages using
 
 ```
 scout/
-├── scout.php              # Main plugin file
-├── composer.json            # Composer package configuration
-├── README.md                # This file
+├── scout.php                    # Main plugin file
+├── composer.json                # Composer package configuration
+├── README.md                    # This file
 ├── assets/
 │   └── js/
-│       └── app.js           # Frontend chat application
+│       └── app.js               # Frontend chat application
 ├── includes/
-│   ├── admin/               # Admin interface components
-│   │   ├── menu.php         # Admin menu & submenu registration
-│   │   ├── page.php         # Main Scout page rendering
-│   │   ├── assets.php       # Admin asset loading
-│   │   ├── settings-config.php   # Settings registration & helpers
+│   ├── admin/                   # Admin interface components
+│   │   ├── menu.php             # Admin menu & submenu registration
+│   │   ├── page.php             # Main Scout page rendering
+│   │   ├── assets.php           # Admin asset loading
+│   │   ├── settings-config.php  # Settings registration & helpers
 │   │   └── settings-page.php    # Settings page rendering
-│   ├── ai/                  # AI integration
-│   │   ├── client.php       # Multi-provider AI client
-│   │   └── prompts.php      # AI prompt building
-│   ├── api/                 # REST API endpoints
-│   │   ├── chat-controller.php   # Chat handler logic
-│   │   └── routes.php       # API route registration
-│   ├── blocks/              # Block management
-│   │   ├── allowed.php      # Block discovery from theme
-│   │   └── validator.php    # Block validation logic
-│   ├── content/             # Content generation
+│   ├── ai/                      # AI integration
+│   │   ├── client.php           # Multi-provider AI client
+│   │   └── prompts.php          # AI prompt building
+│   ├── api/                     # REST API endpoints
+│   │   ├── chat-controller.php  # Chat handler logic
+│   │   └── routes.php           # API route registration
+│   ├── blocks/                  # Block management
+│   │   ├── allowed.php          # Block discovery from theme
+│   │   └── validator.php        # Block validation logic
+│   ├── content/                 # Content generation
 │   │   ├── block-builder.php    # WordPress block builder
 │   │   ├── post-creator.php     # Post creation logic
 │   │   └── post-creator-helper.php  # Helper functions
-│   ├── media/               # Media library utilities
-│   │   └── placeholder.php  # Image selection and conversion
-│   └── updates/             # Plugin update checker
+│   ├── media/                   # Media library utilities
+│   │   └── placeholder.php      # Image selection and conversion
+│   └── updates/                 # Plugin update checker
 │       └── plugin-update-checker.php # GitHub release auto-updates
 └── readme.txt
 ```
