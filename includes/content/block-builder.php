@@ -22,11 +22,15 @@ function scout_clean_wysiwyg_content($content) {
 
 /**
  * Extract background color from a block's render.php file
- * Looks for tailwind bg-* classes in the primary div
- * Handles both hardcoded classes and PHP conditional backgrounds
+ * 
+ * Detects background colors by scanning the render template for:
+ * - Hardcoded bg-* classes in class attributes
+ * - PHP ternary expressions with conditional backgrounds (e.g., theme-based)
+ * 
+ * Used to determine padding between consecutive blocks with matching backgrounds.
  * 
  * @param string $block_type Block type without 'carimus/' prefix
- * @return string|null The background class (e.g., 'bg-primary-900') or null if not found/white
+ * @return string|null The background class (e.g., 'bg-primary-900') or null if not found
  */
 function scout_extract_background_color_from_render($block_type) {
     $theme_dir = get_stylesheet_directory();
@@ -37,11 +41,13 @@ function scout_extract_background_color_from_render($block_type) {
     }
     
     $content = file_get_contents($render_file);
+    if ($content === false) {
+        return null;
+    }
     
-    // First, try to find hardcoded bg-* classes in class attributes (not in PHP)
+    // Try to find hardcoded bg-* classes in class attributes (not inside PHP)
     if (preg_match('/class="([^<]*\bbg-[a-zA-Z0-9\-]+[^<]*)"/i', $content, $matches)) {
         $classes = $matches[1];
-        // Make sure this isn't inside PHP tags
         if (strpos($classes, '<?php') === false && strpos($classes, '?>') === false) {
             if (preg_match('/\b(bg-[a-zA-Z0-9\-]+)\b/', $classes, $bg_match)) {
                 return $bg_match[1];
@@ -50,12 +56,11 @@ function scout_extract_background_color_from_render($block_type) {
     }
     
     // Look for PHP ternary expressions with bg-* classes
-    // Pattern: ? "bg-white" : "bg-primary-900"
     if (preg_match('/\?\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?\s*:\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?/i', $content, $bg_match)) {
         $option1 = $bg_match[1];
         $option2 = $bg_match[2];
         
-        // Prefer the non-white background
+        // Prefer the colored background over white/transparent
         if (scout_is_colored_background($option2)) {
             return $option2;
         } elseif (scout_is_colored_background($option1)) {
@@ -67,27 +72,30 @@ function scout_extract_background_color_from_render($block_type) {
 }
 
 /**
- * Check if a background color is "colored" (not white, transparent, or not set)
+ * Check if a background color is considered "colored"
+ * 
+ * Returns false for white, transparent, or unset backgrounds.
  * 
  * @param string|null $bg_class The background class to check
  * @return bool True if it's a colored background
  */
 function scout_is_colored_background($bg_class) {
+    static $non_colored = null;
+    
+    if ($non_colored === null) {
+        $non_colored = [
+            'bg-white',
+            'bg-transparent',
+            'bg-none',
+            'bg-inherit',
+        ];
+    }
+    
     if (!$bg_class) {
         return false;
     }
     
-    $normalized = strtolower($bg_class);
-    
-    // List of backgrounds considered "not colored"
-    $non_colored = [
-        'bg-white',
-        'bg-transparent',
-        'bg-none',
-        'bg-inherit',
-    ];
-    
-    return !in_array($normalized, $non_colored);
+    return !in_array(strtolower($bg_class), $non_colored);
 }
 
 /**
