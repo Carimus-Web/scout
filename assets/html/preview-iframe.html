@@ -1,0 +1,55 @@
+<div class="flex flex-col w-full h-full bg-white">
+    <!-- Header -->
+    <div
+        class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-cyan-50 to-blue-50"
+    >
+        <div>
+            <p
+                class="text-xs text-gray-500 font-semibold uppercase tracking-widest"
+            >
+                Preview
+            </p>
+            <h2 class="text-lg font-bold text-gray-900">Draft Page</h2>
+        </div>
+        <div class="flex gap-2">
+            <button
+                onclick="
+                    document
+                        .getElementById('previewFrame')
+                        .contentWindow.location.reload()
+                "
+                class="px-3 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-lg font-semibold text-sm transition-all"
+            >
+                ↻ Refresh
+            </button>
+            <button
+                onclick="openPageInEditor('{{EDIT_URL}}')"
+                class="px-4 py-2 bg-gradient-to-r from-cyan-400 to-cyan-600 text-white rounded-lg font-semibold text-sm transition-all hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+            >
+                Edit in WordPress
+            </button>
+        </div>
+    </div>
+
+    <!-- iframe container with responsive scaling for 1440px desktop preview -->
+    <div
+        class="flex-1 overflow-auto bg-gray-100 flex items-stretch justify-center"
+    >
+        <div class="w-full h-full" id="iframeScaler">
+            <iframe
+                id="previewFrame"
+                src="{{POST_URL}}"
+                class="border-0 w-full"
+                style="transform-origin: left top !important"
+            ></iframe>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="px-6 py-3 border-t border-gray-200 bg-gray-50 text-center">
+        <p class="text-xs text-gray-600">
+            Previewing your draft page at 1440px width. Content scales to fit.
+            Click "Refresh" to reload or "Edit in WordPress" to make changes.
+        </p>
+    </div>
+</div>

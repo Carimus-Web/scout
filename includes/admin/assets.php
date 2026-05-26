@@ -4,6 +4,35 @@ add_action('admin_enqueue_scripts', function ($hook) {
 
     if ($hook !== 'toplevel_page_scout') return;
 
+    // Pre-load template HTML files
+    $templates = [];
+    $template_names = [
+        'main-layout',
+        'preview-idle',
+        'preview-loading',
+        'preview-error',
+        'preview-iframe'
+    ];
+
+    $template_dir = SCOUT_PATH . 'assets/html';
+    foreach ($template_names as $name) {
+        $file = $template_dir . '/' . $name . '.html';
+        if (file_exists($file)) {
+            $templates[$name] = file_get_contents($file);
+        }
+    }
+
+    // Inject config and templates into window
+    echo '<script>';
+    echo 'window.SCOUT = ' . json_encode([
+        'api' => '/wp-json/scout/v1/chat',
+        'postTypes' => scout_get_post_types(),
+        'settingsUrl' => admin_url('admin.php?page=scout-settings')
+    ]) . ';';
+    echo 'window.SCOUT_TEMPLATE_PATH = ' . json_encode(SCOUT_URL . 'assets/html') . ';';
+    echo 'window.SCOUT_TEMPLATES = ' . json_encode($templates) . ';';
+    echo '</script>';
+
     wp_enqueue_script(
         'scout-app',
         SCOUT_URL . 'assets/js/app.js',
@@ -12,11 +41,13 @@ add_action('admin_enqueue_scripts', function ($hook) {
         true
     );
 
-    wp_localize_script('scout-app', 'SCOUT', [
-        'api' => '/wp-json/scout/v1/chat',
-        'postTypes' => scout_get_post_types(),
-        'settingsUrl' => admin_url('admin.php?page=scout-settings')
-    ]);
+    // Add module type attribute to the script tag
+    add_filter('script_loader_tag', function ($tag, $handle) {
+        if ($handle === 'scout-app') {
+            return str_replace(' src=', ' type="module" src=', $tag);
+        }
+        return $tag;
+    }, 10, 2);
 });
 
 function scout_get_post_types() {

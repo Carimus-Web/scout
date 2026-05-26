@@ -315,11 +315,71 @@ Response:
 ### File Locations
 
 - **Frontend App:** `assets/js/app.js`
+- **Frontend Templates:** `assets/js/templates/`
+- **Template HTML:** `assets/html/`
 - **Admin Settings:** `includes/admin/settings-config.php` and `includes/admin/settings-page.php`
 - **Admin Menu:** `includes/admin/menu.php`
 - **API Routes:** `includes/api/routes.php`
 - **Block Discovery:** `includes/blocks/allowed.php`
 - **AI Prompts:** `includes/ai/prompts.php`
+
+### Frontend Template System
+
+Scout uses a modular template architecture to keep markup clean and maintainable:
+
+#### HTML Templates (`assets/html/`)
+
+Separate HTML files for each UI component:
+
+- **`main-layout.html`** – Main app container with chat sidebar and preview panel
+- **`preview-idle.html`** – Ready state with rocket emoji and feature list
+- **`preview-loading.html`** – Loading animation with spinner
+- **`preview-error.html`** – Error display with warning message
+- **`preview-iframe.html`** – Draft page preview iframe (uses {{POST_URL}} and {{EDIT_URL}} placeholders)
+
+#### Template Modules (`assets/js/templates/`)
+
+JavaScript modules that expose template functions:
+
+- **`loader.js`** – Template loading and caching system
+  - Pre-loads templates server-side into `window.SCOUT_TEMPLATES`
+  - Provides `getTemplateSync(name)` for instant access
+  - Fallback `loadTemplate(name)` for dynamic loading
+  
+- **`mainLayout.js`** – Main layout template retrieval
+  - `getMainLayoutHTML()` – Returns main container HTML
+  
+- **`previewStates.js`** – Preview state templates
+  - `getPreviewIdleHTML()` – Ready state
+  - `getPreviewLoadingHTML()` – Loading animation
+  - `getPreviewErrorHTML()` – Error state
+  
+- **`previewIframe.js`** – Preview iframe template
+  - `getPreviewIframeHTML(postUrl, editUrl)` – Returns iframe with substituted URLs
+  - `setupIframeScaling()` – Responsive scaling for 1440px preview
+  
+- **`utils.js`** – Helper utilities
+  - `escapeHtml()` – HTML entity escaping
+  - `parseMarkdown()` – Markdown parsing for chat messages
+
+#### How Templates Work
+
+1. **Server-side loading** – `includes/admin/assets.php` reads all HTML files and embeds them in `window.SCOUT_TEMPLATES`
+2. **Pre-loading** – Templates are available instantly (no network delay on first render)
+3. **Synchronous access** – Template functions use `getTemplateSync()` to return cached HTML immediately
+4. **VS Code friendly** – HTML files get proper syntax highlighting and formatting in editors
+5. **Dynamic templates** – The iframe template uses `{{POST_URL}}` and `{{EDIT_URL}}` placeholders replaced at runtime
+
+#### Editing Templates
+
+To update the UI:
+
+- **Change app layout?** → Edit `assets/html/main-layout.html`
+- **Update preview states?** → Edit the corresponding `preview-*.html` files
+- **Modify iframe styling?** → Edit `assets/html/preview-iframe.html`
+- **Add utilities?** → Add functions to `assets/js/templates/utils.js`
+
+HTML files are properly formatted and syntax-highlighted in VS Code – no more editing markup embedded in JavaScript strings!
 
 ### Using Settings Functions
 
