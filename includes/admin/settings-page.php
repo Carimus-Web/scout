@@ -11,6 +11,9 @@ function scout_render_settings_page() {
     <div class="wrap">
         <h1>Scout Settings</h1>
         <p>Configure your AI provider and API key for content generation.</p>
+        
+        <?php settings_errors(); ?>
+        
         <hr style="margin: 20px 0;"/>
         
         <form action="options.php" method="POST">

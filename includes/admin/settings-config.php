@@ -4,6 +4,10 @@
  * Register settings for Scout AI configuration
  */
 function scout_register_settings() {
+    // Get all public post types for default value
+    $all_post_types = get_post_types(['public' => true], 'objects');
+    $default_post_types = array_keys($all_post_types);
+    
     register_setting('scout_settings', 'scout_ai_provider', [
         'sanitize_callback' => function($value) {
             return sanitize_text_field($value) ?: 'anthropic';
@@ -21,6 +25,46 @@ function scout_register_settings() {
         'sanitize_callback' => 'rest_sanitize_boolean',
         'type' => 'boolean',
         'show_in_rest' => false
+    ]);
+
+    register_setting('scout_settings', 'scout_post_types', [
+        'sanitize_callback' => function($value) {
+            // Handle empty value from hidden input
+            if (empty($value) || (is_array($value) && count($value) === 0)) {
+                // Validation error - at least one post type is required
+                add_settings_error(
+                    'scout_post_types',
+                    'scout_post_types_required',
+                    'At least one content type must be selected.',
+                    'error'
+                );
+                // Return the current saved value to prevent clearing
+                return get_option('scout_post_types');
+            }
+            
+            // If not an array, return current value
+            if (!is_array($value)) {
+                return get_option('scout_post_types');
+            }
+            
+            // Sanitize each post type
+            $sanitized = array_filter(array_map('sanitize_text_field', $value));
+            
+            // Check that at least one is selected
+            if (empty($sanitized)) {
+                add_settings_error(
+                    'scout_post_types',
+                    'scout_post_types_required',
+                    'At least one content type must be selected.',
+                    'error'
+                );
+                return get_option('scout_post_types');
+            }
+            
+            return $sanitized;
+        },
+        'type' => 'array',
+        'default' => $default_post_types
     ]);
 
     add_settings_section(
@@ -44,6 +88,21 @@ function scout_register_settings() {
         'scout_api_key_field_callback',
         'scout_settings',
         'scout_ai_settings'
+    );
+
+    add_settings_section(
+        'scout_content_settings',
+        'Content Type Configuration',
+        'scout_content_settings_section_callback',
+        'scout_settings'
+    );
+
+    add_settings_field(
+        'scout_post_types',
+        'Available Content Types',
+        'scout_post_types_field_callback',
+        'scout_settings',
+        'scout_content_settings'
     );
 }
 
@@ -182,4 +241,49 @@ function scout_api_key_field_callback() {
     if ($verified) {
         echo '<p style="color: green;"><strong>✓</strong> API key verified and working</p>';
     }
+}
+
+/**
+ * Content settings section callback
+ */
+function scout_content_settings_section_callback() {
+    echo '<p>Select which content types should be available in Scout for generating drafts.</p>';
+}
+
+/**
+ * Post types field callback
+ */
+function scout_post_types_field_callback() {
+    $selected_types = get_option('scout_post_types');
+    
+    // If not set yet, get all public post types as default
+    if ($selected_types === false) {
+        $all_types = get_post_types(['public' => true], 'objects');
+        $selected_types = array_keys($all_types);
+    }
+    
+    $all_types = get_post_types(['public' => true], 'objects');
+    
+    if (empty($all_types)) {
+        echo '<p>No public post types found.</p>';
+        return;
+    }
+    
+    // Hidden input with empty value to ensure unchecked values are saved as empty array
+    echo '<input type="hidden" name="scout_post_types" value="" />';
+    
+    echo '<div style="display: flex; flex-direction: column; gap: 10px;">';
+    
+    foreach ($all_types as $type) {
+        $checked = in_array($type->name, $selected_types, true) ? 'checked' : '';
+        $field_name = 'scout_post_types[]';
+        
+        echo '<label style="display: flex; align-items: center; gap: 8px; margin-bottom: 5px;">';
+        echo '<input type="checkbox" name="' . esc_attr($field_name) . '" value="' . esc_attr($type->name) . '" ' . esc_attr($checked) . ' />';
+        echo '<span>' . esc_html($type->label) . '</span>';
+        echo '</label>';
+    }
+    
+    echo '</div>';
+    echo '<p class="description">Select at least one content type to make available in Scout. If none are selected, the form will not save.</p>';
 }
