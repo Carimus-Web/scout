@@ -162,6 +162,62 @@ Scout is specially configured to handle WYSIWYG and rich text fields correctly:
 - **HTML Stripping:** During block building, any remaining HTML tags are removed from WYSIWYG content, preserving only plain text
 - **Result:** Your WYSIWYG fields display clean, properly formatted text without encoded entity artifacts
 
+### Vector Database Configuration (Optional)
+
+Scout can optionally integrate with AWS Bedrock for semantic image selection. This uses vector embeddings to find images from your media library that are semantically similar to the page content being generated.
+
+#### Quick Setup
+
+1. In WordPress admin, go to **Scout → Settings**
+2. Scroll to **Vector Database Configuration**
+3. Check **Enable Vector DB for Image Search**
+4. Configure:
+    - **AWS Region** – Your Bedrock region (e.g., us-east-1, eu-west-1)
+    - **Bedrock Model** – Choose Titan or Cohere embeddings
+    - **Vector DB Endpoint** – PostgreSQL connection string (optional)
+5. Click **Save Settings**
+
+#### How It Works
+
+- **When Enabled:** Scout embeds the generated content using AWS Bedrock, then queries your PostgreSQL vector database to find semantically relevant images from your media library
+- **When Disabled:** Scout randomly selects from the 50 most recent image uploads
+
+#### Environment Variable Configuration (Optional)
+
+If you prefer environment variables instead of WordPress settings:
+
+```bash
+export SCOUT_VECTOR_DB_ENABLED=true
+export SCOUT_BEDROCK_REGION=us-east-1
+export SCOUT_BEDROCK_MODEL=amazon.titan-embed-text-v1
+export SCOUT_VECTOR_DB_ENDPOINT=postgresql://user:pass@host:5432/scout_vectors
+```
+
+#### Setting Up PostgreSQL with pgvector
+
+For semantic search, you'll need a PostgreSQL database with the pgvector extension:
+
+```sql
+-- Create extension (run once)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Create images table
+CREATE TABLE scout_images (
+    id SERIAL PRIMARY KEY,
+    attachment_id INT UNIQUE NOT NULL,
+    title VARCHAR(255),
+    alt_text TEXT,
+    embedding vector(1536),
+    synced_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create index for fast similarity search
+CREATE INDEX ON scout_images USING ivfflat (embedding vector_cosine_ops)
+WITH (lists = 100);
+```
+
+**Note:** Vector database setup is optional. Scout works perfectly fine without it, using random image selection instead.
+
 ### Setup
 
 1. Activate the Scout plugin in WordPress
@@ -184,13 +240,28 @@ Scout is specially configured to handle WYSIWYG and rich text fields correctly:
 
 ### Settings Configuration (`includes/admin/settings-config.php`)
 
-Handles provider and API key configuration:
+Handles provider and API key configuration, plus optional Vector Database settings:
+
+**AI Provider Settings:**
 
 - Registers WordPress settings and fields
 - Provides `scout_get_ai_provider()` – gets provider from WordPress options, falls back to env var
 - Provides `scout_get_api_key($provider)` – gets encrypted API key, falls back to env var
 - Encrypts API keys before storage, decrypts on retrieval
-- Settings accessible via **Scout → Settings** in WordPress admin
+
+**Vector Database Settings (Optional):**
+
+- Provides `scout_is_vector_db_enabled()` – checks if vector DB is configured
+- Provides `scout_get_bedrock_region()` – gets AWS region from settings or env var
+- Provides `scout_get_bedrock_model()` – gets embedding model (Titan or Cohere)
+- Provides `scout_get_vector_db_endpoint()` – gets PostgreSQL connection string
+- All settings accessible via **Scout → Settings** in WordPress admin
+- Environment variable fallback for all settings
+
+**Settings accessible via:**
+
+- **Scout → Settings** page in WordPress admin (recommended)
+- Environment variables (fallback)
 
 ### Block Metadata Reader (`includes/blocks/allowed.php`)
 
@@ -267,21 +338,38 @@ Handles the creation of WordPress draft posts with the generated block content:
 
 ### Media Library Integration (`includes/media/placeholder.php`)
 
-Scans the WordPress media library and provides intelligent image selection:
+Provides intelligent image selection with fallback to random selection:
 
-- **`scout_get_media_library_images($limit)`** – Fetches up to 20 media library images with full metadata (ID, URL, alt text, dimensions, title)
+**Core Functions:**
+
+- **`scout_get_media_library_images($limit)`** – Fetches media library images with full metadata (ID, URL, alt text, title)
+    - Returns up to 50 most recent images by default (increased for better random selection)
+    - When Vector DB is enabled: Will use semantic similarity ranking (future implementation)
 - **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
-- AI receives media library context in the system prompt and selects images intelligently based on content context
-- For example: "vehicle-related" content triggers selection of images with vehicles
-- Images are stored with complete ACF metadata (ID, URL, alt text, width, height, caption)
 
-**How it works:**
+**Image Selection Logic:**
 
-1. When generating a page, Scout fetches the 20 most recent images from your media library
-2. Image metadata is included in the AI prompt so Claude can reference them
-3. For blocks with image fields, Claude analyzes the content and selects appropriate image IDs
-4. Image IDs are converted to full ACF image arrays before being stored in blocks
-5. Blocks render with real images from your library instead of placeholders
+**Without Vector DB (Current):**
+
+1. Fetch 50 most recent images from media library
+2. AI receives image metadata in the system prompt
+3. AI randomly selects from the 50 most recent images
+4. Simple but works well for active media libraries
+
+**With Vector DB (Future):**
+
+1. Fetch embeddings for all images in media library
+2. AI generates page content
+3. Embed content using Bedrock embeddings API
+4. Query PostgreSQL for semantically similar images
+5. AI selects from best matches (ranked by relevance)
+6. Dramatically improved image relevance for generated content
+
+**Examples:**
+
+- "vehicle" content → selects images with vehicles
+- "office" content → selects images with office spaces
+- "team" content → selects images with people
 
 ## API
 
@@ -342,25 +430,21 @@ Separate HTML files for each UI component:
 JavaScript modules that expose template functions:
 
 - **`loader.js`** – Template loading and caching system
-  - Pre-loads templates server-side into `window.SCOUT_TEMPLATES`
-  - Provides `getTemplateSync(name)` for instant access
-  - Fallback `loadTemplate(name)` for dynamic loading
-  
+    - Pre-loads templates server-side into `window.SCOUT_TEMPLATES`
+    - Provides `getTemplateSync(name)` for instant access
+    - Fallback `loadTemplate(name)` for dynamic loading
 - **`mainLayout.js`** – Main layout template retrieval
-  - `getMainLayoutHTML()` – Returns main container HTML
-  
+    - `getMainLayoutHTML()` – Returns main container HTML
 - **`previewStates.js`** – Preview state templates
-  - `getPreviewIdleHTML()` – Ready state
-  - `getPreviewLoadingHTML()` – Loading animation
-  - `getPreviewErrorHTML()` – Error state
-  
+    - `getPreviewIdleHTML()` – Ready state
+    - `getPreviewLoadingHTML()` – Loading animation
+    - `getPreviewErrorHTML()` – Error state
 - **`previewIframe.js`** – Preview iframe template
-  - `getPreviewIframeHTML(postUrl, editUrl)` – Returns iframe with substituted URLs
-  - `setupIframeScaling()` – Responsive scaling for 1440px preview
-  
+    - `getPreviewIframeHTML(postUrl, editUrl)` – Returns iframe with substituted URLs
+    - `setupIframeScaling()` – Responsive scaling for 1440px preview
 - **`utils.js`** – Helper utilities
-  - `escapeHtml()` – HTML entity escaping
-  - `parseMarkdown()` – Markdown parsing for chat messages
+    - `escapeHtml()` – HTML entity escaping
+    - `parseMarkdown()` – Markdown parsing for chat messages
 
 #### How Templates Work
 

@@ -104,6 +104,82 @@ function scout_register_settings() {
         'scout_settings',
         'scout_content_settings'
     );
+
+    // Vector Database settings
+    register_setting('scout_settings', 'scout_vector_db_enabled', [
+        'sanitize_callback' => 'rest_sanitize_boolean',
+        'type' => 'boolean',
+        'default' => false
+    ]);
+
+    register_setting('scout_settings', 'scout_vector_db_provider', [
+        'sanitize_callback' => function($value) {
+            return sanitize_text_field($value) ?: 'bedrock';
+        },
+        'default' => 'bedrock'
+    ]);
+
+    register_setting('scout_settings', 'scout_bedrock_region', [
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => 'us-east-1'
+    ]);
+
+    register_setting('scout_settings', 'scout_bedrock_model', [
+        'sanitize_callback' => function($value) {
+            return sanitize_text_field($value) ?: 'amazon.titan-embed-text-v1';
+        },
+        'default' => 'amazon.titan-embed-text-v1'
+    ]);
+
+    register_setting('scout_settings', 'scout_vector_db_endpoint', [
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => ''
+    ]);
+
+    register_setting('scout_settings', 'scout_vector_db_verified', [
+        'sanitize_callback' => 'rest_sanitize_boolean',
+        'type' => 'boolean',
+        'show_in_rest' => false
+    ]);
+
+    add_settings_section(
+        'scout_vector_db_settings',
+        'Vector Database Configuration',
+        'scout_vector_db_settings_section_callback',
+        'scout_settings'
+    );
+
+    add_settings_field(
+        'scout_vector_db_enabled',
+        'Enable Vector DB for Image Search',
+        'scout_vector_db_enabled_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
+
+    add_settings_field(
+        'scout_bedrock_region',
+        'AWS Region',
+        'scout_bedrock_region_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
+
+    add_settings_field(
+        'scout_bedrock_model',
+        'Bedrock Embedding Model',
+        'scout_bedrock_model_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
+
+    add_settings_field(
+        'scout_vector_db_endpoint',
+        'Vector DB Endpoint',
+        'scout_vector_db_endpoint_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
 }
 
 add_action('admin_init', 'scout_register_settings');
@@ -207,6 +283,80 @@ function scout_get_ai_provider() {
 }
 
 /**
+ * Check if Vector DB is enabled (from WordPress options first, then env var)
+ */
+function scout_is_vector_db_enabled() {
+    // Try WordPress option first
+    $enabled = get_option('scout_vector_db_enabled', false);
+    if ($enabled) {
+        return true;
+    }
+
+    // Try environment variable
+    return strtolower(getenv('SCOUT_VECTOR_DB_ENABLED')) === 'true';
+}
+
+/**
+ * Get Bedrock region (from WordPress options first, then env var)
+ */
+function scout_get_bedrock_region() {
+    // Try WordPress option first
+    $region = get_option('scout_bedrock_region');
+    if (!empty($region)) {
+        return $region;
+    }
+
+    // Try environment variable
+    $env_region = getenv('SCOUT_BEDROCK_REGION');
+    if (!empty($env_region)) {
+        return $env_region;
+    }
+
+    // Default to us-east-1
+    return 'us-east-1';
+}
+
+/**
+ * Get Bedrock embedding model (from WordPress options first, then env var)
+ */
+function scout_get_bedrock_model() {
+    // Try WordPress option first
+    $model = get_option('scout_bedrock_model');
+    if (!empty($model)) {
+        return $model;
+    }
+
+    // Try environment variable
+    $env_model = getenv('SCOUT_BEDROCK_MODEL');
+    if (!empty($env_model)) {
+        return $env_model;
+    }
+
+    // Default to Titan
+    return 'amazon.titan-embed-text-v1';
+}
+
+/**
+ * Get Vector DB endpoint (from WordPress options first, then env var)
+ */
+function scout_get_vector_db_endpoint() {
+    // Try WordPress option first
+    $endpoint = get_option('scout_vector_db_endpoint');
+    if (!empty($endpoint)) {
+        return $endpoint;
+    }
+
+    // Try environment variable
+    $env_endpoint = getenv('SCOUT_VECTOR_DB_ENDPOINT');
+    if (!empty($env_endpoint)) {
+        return $env_endpoint;
+    }
+
+    // Return empty - endpoint may not be needed if using Bedrock only
+    return '';
+}
+
+/**
  * Settings section callback
  */
 function scout_settings_section_callback() {
@@ -286,4 +436,74 @@ function scout_post_types_field_callback() {
     
     echo '</div>';
     echo '<p class="description">Select at least one content type to make available in Scout. If none are selected, the form will not save.</p>';
+}
+
+/**
+ * Vector database settings section callback
+ */
+function scout_vector_db_settings_section_callback() {
+    $enabled = get_option('scout_vector_db_enabled', false);
+    echo '<p>';
+    echo 'Optionally integrate with AWS Bedrock vector database for semantic image selection. ';
+    echo 'If not configured, Scout will randomly select from the 50 most recent uploads.';
+    echo '</p>';
+    
+    if (!$enabled) {
+        echo '<p style="color: #666; font-style: italic;">Vector DB is currently disabled. Enable below to configure connection.</p>';
+    }
+}
+
+/**
+ * Vector DB enabled toggle callback
+ */
+function scout_vector_db_enabled_field_callback() {
+    $enabled = get_option('scout_vector_db_enabled', false);
+    
+    echo '<label style="display: flex; align-items: center; gap: 8px;">';
+    echo '<input type="checkbox" name="scout_vector_db_enabled" value="1" ' . checked($enabled, 1, false) . ' />';
+    echo '<span>Enable Vector Database integration</span>';
+    echo '</label>';
+    echo '<p class="description">When enabled, Scout will use semantic similarity to select images from your media library. Requires AWS Bedrock API access.</p>';
+}
+
+/**
+ * AWS Region field callback
+ */
+function scout_bedrock_region_field_callback() {
+    $enabled = get_option('scout_vector_db_enabled', false);
+    $region = get_option('scout_bedrock_region', 'us-east-1');
+    
+    $disabled = !$enabled ? 'disabled' : '';
+    
+    echo '<input type="text" name="scout_bedrock_region" value="' . esc_attr($region) . '" placeholder="us-east-1" ' . $disabled . ' />';
+    echo '<p class="description">AWS region for Bedrock embeddings. Example: us-east-1, us-west-2, eu-west-1</p>';
+}
+
+/**
+ * Bedrock Model field callback
+ */
+function scout_bedrock_model_field_callback() {
+    $enabled = get_option('scout_vector_db_enabled', false);
+    $model = get_option('scout_bedrock_model', 'amazon.titan-embed-text-v1');
+    
+    $disabled = !$enabled ? 'disabled' : '';
+    
+    echo '<select name="scout_bedrock_model" ' . $disabled . '>';
+    echo '<option value="amazon.titan-embed-text-v1" ' . selected($model, 'amazon.titan-embed-text-v1', false) . '>Amazon Titan Text Embeddings v1 (Recommended)</option>';
+    echo '<option value="cohere.embed-english-v3" ' . selected($model, 'cohere.embed-english-v3', false) . '>Cohere Embed English v3</option>';
+    echo '</select>';
+    echo '<p class="description">Choose the embedding model for semantic image search. Both models are available on AWS Bedrock.</p>';
+}
+
+/**
+ * Vector DB endpoint field callback
+ */
+function scout_vector_db_endpoint_field_callback() {
+    $enabled = get_option('scout_vector_db_enabled', false);
+    $endpoint = get_option('scout_vector_db_endpoint', '');
+    
+    $disabled = !$enabled ? 'disabled' : '';
+    
+    echo '<input type="text" name="scout_vector_db_endpoint" value="' . esc_attr($endpoint) . '" placeholder="postgresql://user:pass@host:5432/scout_vectors" size="60" ' . $disabled . ' />';
+    echo '<p class="description">PostgreSQL connection string with pgvector extension. Format: postgresql://user:password@host:port/database. Leave blank if using AWS credentials from environment.</p>';
 }
