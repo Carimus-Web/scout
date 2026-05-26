@@ -16,15 +16,7 @@ function scout_render_settings_page() {
         
         <hr style="margin: 20px 0;"/>
         
-        <form action="options.php" method="POST">
-            <?php
-            settings_fields('scout_settings');
-            do_settings_sections('scout_settings');
-            submit_button();
-            ?>
-        </form>
-        
-        <div style="margin-top: 30px; padding: 20px; background: #f5f5f5; border-radius: 5px;">
+        <div style="margin-bottom: 30px; padding: 20px; background: #f5f5f5; border-radius: 5px;">
             <h3>API Key Information</h3>
             <ul>
                 <li><strong>Anthropic Claude:</strong> Get your API key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></li>
@@ -32,6 +24,14 @@ function scout_render_settings_page() {
                 <li><strong>Google Gemini:</strong> Get your API key at <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com/app/apikey</a></li>
             </ul>
         </div>
+
+        <form action="options.php" method="POST">
+            <?php
+            settings_fields('scout_settings');
+            do_settings_sections('scout_settings');
+            submit_button();
+            ?>
+        </form>
     </div>
     <?php
 }

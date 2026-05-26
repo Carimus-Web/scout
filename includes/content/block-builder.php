@@ -21,6 +21,76 @@ function scout_clean_wysiwyg_content($content) {
 }
 
 /**
+ * Extract background color from a block's render.php file
+ * Looks for tailwind bg-* classes in the primary div
+ * Handles both hardcoded classes and PHP conditional backgrounds
+ * 
+ * @param string $block_type Block type without 'carimus/' prefix
+ * @return string|null The background class (e.g., 'bg-primary-900') or null if not found/white
+ */
+function scout_extract_background_color_from_render($block_type) {
+    $theme_dir = get_stylesheet_directory();
+    $render_file = $theme_dir . '/templates/blocks/' . $block_type . '/render.php';
+    
+    if (!file_exists($render_file)) {
+        return null;
+    }
+    
+    $content = file_get_contents($render_file);
+    
+    // First, try to find hardcoded bg-* classes in class attributes (not in PHP)
+    if (preg_match('/class="([^<]*\bbg-[a-zA-Z0-9\-]+[^<]*)"/i', $content, $matches)) {
+        $classes = $matches[1];
+        // Make sure this isn't inside PHP tags
+        if (strpos($classes, '<?php') === false && strpos($classes, '?>') === false) {
+            if (preg_match('/\b(bg-[a-zA-Z0-9\-]+)\b/', $classes, $bg_match)) {
+                return $bg_match[1];
+            }
+        }
+    }
+    
+    // Look for PHP ternary expressions with bg-* classes
+    // Pattern: ? "bg-white" : "bg-primary-900"
+    if (preg_match('/\?\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?\s*:\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?/i', $content, $bg_match)) {
+        $option1 = $bg_match[1];
+        $option2 = $bg_match[2];
+        
+        // Prefer the non-white background
+        if (scout_is_colored_background($option2)) {
+            return $option2;
+        } elseif (scout_is_colored_background($option1)) {
+            return $option1;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Check if a background color is "colored" (not white, transparent, or not set)
+ * 
+ * @param string|null $bg_class The background class to check
+ * @return bool True if it's a colored background
+ */
+function scout_is_colored_background($bg_class) {
+    if (!$bg_class) {
+        return false;
+    }
+    
+    $normalized = strtolower($bg_class);
+    
+    // List of backgrounds considered "not colored"
+    $non_colored = [
+        'bg-white',
+        'bg-transparent',
+        'bg-none',
+        'bg-inherit',
+    ];
+    
+    return !in_array($normalized, $non_colored);
+}
+
+/**
  * Get all field keys for a specific block type from ACF JSON definitions
  * 
  * @param string $block_type Block type without 'carimus/' prefix (e.g., 'highlights')
@@ -154,6 +224,14 @@ function scout_build_blocks($layout, $postType = null) {
 
     $totalBlocks = count($layout);
     
+    // Pre-extract background colors for all blocks for comparison
+    $block_bg_colors = [];
+    foreach ($layout as $idx => $blk) {
+        $block_type = str_replace('carimus/', '', $blk['block']);
+        $bg_color = scout_extract_background_color_from_render($block_type);
+        $block_bg_colors[$idx] = $bg_color;
+    }
+    
     foreach ($layout as $blockIndex => $block) {
 
         $fields = $block['fields'];
@@ -238,9 +316,26 @@ function scout_build_blocks($layout, $postType = null) {
             }
         }
 
-        // Determine bottom padding: none for last block, lg for all others
+        // Determine bottom padding based on background colors
         $isLastBlock = ($blockIndex === $totalBlocks - 1);
+        
+        // Default: none for last block, lg for all others
         $bottomPadding = $isLastBlock ? 'none' : 'lg';
+        
+        // Check if current and next block have the same colored background
+        if (!$isLastBlock) {
+            $current_bg = $block_bg_colors[$blockIndex] ?? null;
+            $next_bg = $block_bg_colors[$blockIndex + 1] ?? null;
+            
+            // If both blocks have colored backgrounds and they match, set padding to none
+            if (
+                scout_is_colored_background($current_bg) &&
+                scout_is_colored_background($next_bg) &&
+                $current_bg === $next_bg
+            ) {
+                $bottomPadding = 'none';
+            }
+        }
 
         // Add padding in NESTED format for render templates (they call get_field('padding'))
         // The structure matches ACF's nested format
