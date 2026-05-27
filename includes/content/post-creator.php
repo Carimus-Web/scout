@@ -4,13 +4,13 @@ require_once SCOUT_PATH . 'includes/content/block-builder.php';
 require_once SCOUT_PATH . 'includes/content/post-creator-helper.php';
 require_once SCOUT_PATH . 'includes/media/placeholder.php';
 
-function scout_create_post($postType, $layout) {
+function scout_create_post($postType, $layout, $title = 'AI Generated Page') {
     error_log('scout_create_post called with postType: ' . $postType);
 
     $post_id = wp_insert_post([
         'post_type' => $postType,
         'post_status' => 'draft',
-        'post_title' => 'AI Generated Page'
+        'post_title' => $title
     ]);
 
     // Check if post creation failed
@@ -43,7 +43,7 @@ function scout_create_post($postType, $layout) {
     return $post_id;
 }
 
-function scout_update_post($post_id, $layout) {
+function scout_update_post($post_id, $layout, $title = null) {
     error_log('scout_update_post called with post_id: ' . $post_id);
 
     // Verify the post exists
@@ -59,10 +59,17 @@ function scout_update_post($post_id, $layout) {
     error_log('Blocks built, content length: ' . strlen($content));
     error_log('Full serialized blocks: ' . $content);
 
-    $updated = wp_update_post([
+    $update_args = [
         'ID' => $post_id,
         'post_content' => $content
-    ]);
+    ];
+    
+    // Update title only if provided
+    if ($title !== null) {
+        $update_args['post_title'] = $title;
+    }
+
+    $updated = wp_update_post($update_args);
 
     if (is_wp_error($updated)) {
         error_log('wp_update_post failed: ' . $updated->get_error_message());

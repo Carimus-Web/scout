@@ -126,20 +126,19 @@ function showPreviewLoading() {
     let loadingEl = document.getElementById('previewLoading');
     let errorEl = document.getElementById('previewError');
 
-    // If loading/error elements don't exist, add them
+    // If loading/error elements don't exist, create them fresh
     if (!loadingEl || !errorEl) {
-        const idle = document.getElementById('previewIdle');
-        if (idle) {
-            idle.insertAdjacentHTML('afterend', getPreviewLoadingHTML());
-            idle.insertAdjacentHTML('afterend', getPreviewErrorHTML());
-        }
+        // Clear current preview content and rebuild with loading/error states
+        previewDiv.innerHTML = getPreviewLoadingHTML() + getPreviewErrorHTML();
         loadingEl = document.getElementById('previewLoading');
         errorEl = document.getElementById('previewError');
     }
 
     // Hide other states and show loading
     const idle = document.getElementById('previewIdle');
+    const iframe = document.getElementById('previewFrame');
     if (idle) idle.style.display = 'none';
+    if (iframe) iframe.parentElement.style.display = 'none';
     if (errorEl) errorEl.style.display = 'none';
     if (loadingEl) loadingEl.style.display = 'flex';
 }
@@ -352,7 +351,7 @@ async function submitMessage() {
             const statusEl = document.getElementById('loadingStatus');
             if (statusEl) statusEl.textContent = 'Creating your page...';
 
-            createPageWithBlocks(layoutData.layout, selectedPostType);
+            createPageWithBlocks(layoutData.layout, selectedPostType, layoutData.title);
         } else {
             // Regular message response
             addMessage('assistant', data.reply.content);
@@ -365,7 +364,7 @@ async function submitMessage() {
 }
 
 // Create or update WordPress page with blocks from layout JSON
-async function createPageWithBlocks(layout, postType) {
+async function createPageWithBlocks(layout, postType, title) {
     try {
         const endpoint = SCOUT.api.replace('/chat', '/create-page');
 
@@ -377,6 +376,7 @@ async function createPageWithBlocks(layout, postType) {
             body: JSON.stringify({
                 layout: layout,
                 postType: postType,
+                title: title,
                 post_id: currentPostId, // Send existing post ID if refining
             }),
         });
@@ -415,10 +415,9 @@ async function createPageWithBlocks(layout, postType) {
 // Render preview using iframe of the actual draft post
 function renderPreviewIframe(postUrl, editUrl) {
     const previewDiv = document.getElementById('previewWindow');
-    const previewIdle = document.getElementById('previewIdle');
 
-    // Null checks to prevent "Cannot read properties of null" errors
-    if (!previewDiv || !previewIdle) {
+    // Null check to prevent "Cannot read properties of null" errors
+    if (!previewDiv) {
         addMessage(
             'assistant',
             'Error: Preview elements not found in page. Please refresh and try again.',
@@ -458,8 +457,11 @@ function renderPreviewIframe(postUrl, editUrl) {
 }
 
 function openPageInEditor(editUrl) {
-    window.location.href = editUrl;
+    window.open(editUrl, '_blank');
 }
+
+// Make function globally accessible for inline onclick handlers
+window.openPageInEditor = openPageInEditor;
 
 // Send button click handler
 document.getElementById('send').onclick = submitMessage;

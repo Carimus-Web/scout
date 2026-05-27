@@ -82,14 +82,19 @@ function scout_build_prompt($messages, $allowed_blocks) {
             "6. If you don't have enough information, ask clarifying questions\n" .
             "7. Do NOT include emojis in any field values - keep content professional and text-only\n" .
             "8. For WYSIWYG and richtext fields: DO NOT include any HTML markup (no <p>, <b>, <i>, etc.) - only plain text and line breaks\n" .
-            "9. When you have enough information and are ready to create the page, return ONLY valid JSON\n\n" .
+            "9. When you have enough information and are ready to create the page, return ONLY valid JSON with a descriptive title and the layout\n" .
             "IMAGE HANDLING:\n" .
             "- For blocks marked [SUPPORTS IMAGES], pick an image ID from the available media library that matches the content context\n" .
             "- Use the image ID (not URL) in the JSON response\n" .
             "- Pick images intelligently: e.g., for vehicle-related content, pick images with vehicles; for tech content, pick tech-related images\n" .
             "- If no image is appropriate for a block, use image ID null or omit it\n\n" .
+            "PAGE TITLE:\n" .
+            "- Create a descriptive, concise page title (3-8 words) that accurately reflects the page content\n" .
+            "- The title should be professional and suitable for WordPress\n" .
+            "- Examples: 'Our Services', 'Product Features', 'Contact Information'\n\n" .
             "JSON FORMAT (return ONLY when ready to build):\n" .
             "{\n" .
+            "  \"title\": \"Page Title Here\",\n" .
             "  \"layout\": [\n" .
             "    {\n" .
             "      \"block\": \"carimus/block-name\",\n" .
