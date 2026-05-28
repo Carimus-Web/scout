@@ -260,8 +260,30 @@ function scout_build_blocks($layout, $postType = null) {
                 }
             }
             
+            // Handle image fields - extract ID only for block storage
+            if ($field_name === 'image' || $field_type === 'image') {
+                $image_id = null;
+                
+                if (is_numeric($field_value) && $field_value > 0) {
+                    $image_id = $field_value;
+                } elseif (is_array($field_value) && isset($field_value['id'])) {
+                    // Extract ID from full image object
+                    $image_id = $field_value['id'];
+                } elseif (is_array($field_value) && isset($field_value['ID'])) {
+                    // Extract ID from full image object (uppercase key)
+                    $image_id = $field_value['ID'];
+                }
+                
+                // Store just the ID for block attribute storage
+                if ($image_id) {
+                    $acf_fields[$field_name] = (string)$image_id;
+                } else {
+                    // Skip if no valid image
+                    continue;
+                }
+            }
             // Handle repeater fields - store in FLAT format
-            if ($field_type === 'repeater') {
+            elseif ($field_type === 'repeater') {
                 if (!is_array($field_value)) {
                     if (is_string($field_value)) {
                         $decoded = json_decode($field_value, true);
@@ -308,22 +330,6 @@ function scout_build_blocks($layout, $postType = null) {
             }
         }
         
-        // Handle image field
-        if (isset($block['image'])) {
-            if (is_numeric($block['image']) && $block['image'] > 0) {
-                $image_array = scout_attachment_id_to_acf_image($block['image']);
-                if ($image_array) {
-                    $acf_fields['image'] = $image_array;
-                }
-            } elseif (!empty($block['image'])) {
-                $random_id = scout_get_placeholder_image();
-                $image_array = scout_attachment_id_to_acf_image($random_id);
-                if ($image_array) {
-                    $acf_fields['image'] = $image_array;
-                }
-            }
-        }
-
         // Determine bottom padding based on background colors
         $isLastBlock = ($blockIndex === $totalBlocks - 1);
         

@@ -351,7 +351,16 @@ async function submitMessage() {
             const statusEl = document.getElementById('loadingStatus');
             if (statusEl) statusEl.textContent = 'Creating your page...';
 
-            createPageWithBlocks(layoutData.layout, selectedPostType, layoutData.title);
+            // Debug logging
+            console.log('[Scout] Generating page with', layoutData.layout.length, 'blocks');
+            console.log('[Scout] Page title:', layoutData.title);
+            console.log('[Scout] Check browser console for image source details (Vector DB vs random)');
+
+            createPageWithBlocks(
+                layoutData.layout,
+                selectedPostType,
+                layoutData.title,
+            );
         } else {
             // Regular message response
             addMessage('assistant', data.reply.content);

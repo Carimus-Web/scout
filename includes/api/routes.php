@@ -29,30 +29,14 @@ add_action('rest_api_init', function () {
                     $wp_blocks = get_block_types();
                 }
                 
-                // Debug: check WP version and theme
                 global $wp_version;
-                
-                // Debug API key storage
                 $provider = scout_get_ai_provider();
-                $stored_key = get_option('scout_api_key', '');
-                $retrieved_key = scout_get_api_key($provider);
-                $key_length = strlen($retrieved_key);
-                
-                // Log for debugging
-                error_log('Scout Test - Discovered blocks: ' . count($all_discovered_blocks) . ', Carimus blocks: ' . count($carimus_blocks));
-                error_log('Scout Test - Provider: ' . $provider . ', Key stored: ' . (!empty($stored_key) ? 'YES' : 'NO') . ', Key retrieved length: ' . $key_length);
                 
                 return [
                     'status' => 'API is working',
                     'received' => $params,
-                    'provider' => scout_get_ai_provider(),
-                    'has_key' => !empty(scout_get_api_key(scout_get_ai_provider())),
-                    'api_key_debug' => [
-                        'provider' => $provider,
-                        'stored_in_options' => !empty($stored_key),
-                        'retrieved_key_length' => $key_length,
-                        'first_10_chars' => substr($retrieved_key, 0, 10),
-                    ],
+                    'provider' => $provider,
+                    'has_key' => !empty(scout_get_api_key($provider)),
                     'wp_version' => $wp_version ?? 'unknown',
                     'current_theme' => wp_get_theme()->get('Name') ?? 'none',
                     'blocks_api_exists' => $blocks_function_exists,

@@ -136,9 +136,20 @@ function scout_register_settings() {
         'default' => ''
     ]);
 
+    register_setting('scout_settings', 'scout_bedrock_knowledge_base_id', [
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => ''
+    ]);
+
     register_setting('scout_settings', 'scout_vector_db_verified', [
         'sanitize_callback' => 'rest_sanitize_boolean',
         'type' => 'boolean',
+        'show_in_rest' => false
+    ]);
+
+    register_setting('scout_settings', 'scout_bedrock_api_key', [
+        'sanitize_callback' => 'sanitize_text_field',
+        'default' => '',
         'show_in_rest' => false
     ]);
 
@@ -177,6 +188,22 @@ function scout_register_settings() {
         'scout_vector_db_endpoint',
         'Vector DB Endpoint',
         'scout_vector_db_endpoint_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
+
+    add_settings_field(
+        'scout_bedrock_knowledge_base_id',
+        'Bedrock Knowledge Base ID',
+        'scout_bedrock_knowledge_base_id_field_callback',
+        'scout_settings',
+        'scout_vector_db_settings'
+    );
+
+    add_settings_field(
+        'scout_bedrock_api_key',
+        'Bedrock API Key',
+        'scout_bedrock_api_key_field_callback',
         'scout_settings',
         'scout_vector_db_settings'
     );
@@ -470,12 +497,9 @@ function scout_vector_db_enabled_field_callback() {
  * AWS Region field callback
  */
 function scout_bedrock_region_field_callback() {
-    $enabled = get_option('scout_vector_db_enabled', false);
     $region = get_option('scout_bedrock_region', 'us-east-1');
     
-    $disabled = !$enabled ? 'disabled' : '';
-    
-    echo '<input type="text" name="scout_bedrock_region" value="' . esc_attr($region) . '" placeholder="us-east-1" ' . $disabled . ' />';
+    echo '<input type="text" name="scout_bedrock_region" value="' . esc_attr($region) . '" placeholder="us-east-1" />';
     echo '<p class="description">AWS region for Bedrock embeddings. Example: us-east-1, us-west-2, eu-west-1</p>';
 }
 
@@ -483,12 +507,9 @@ function scout_bedrock_region_field_callback() {
  * Bedrock Model field callback
  */
 function scout_bedrock_model_field_callback() {
-    $enabled = get_option('scout_vector_db_enabled', false);
     $model = get_option('scout_bedrock_model', 'amazon.titan-embed-text-v1');
     
-    $disabled = !$enabled ? 'disabled' : '';
-    
-    echo '<select name="scout_bedrock_model" ' . $disabled . '>';
+    echo '<select name="scout_bedrock_model">';
     echo '<option value="amazon.titan-embed-text-v1" ' . selected($model, 'amazon.titan-embed-text-v1', false) . '>Amazon Titan Text Embeddings v1 (Recommended)</option>';
     echo '<option value="cohere.embed-english-v3" ' . selected($model, 'cohere.embed-english-v3', false) . '>Cohere Embed English v3</option>';
     echo '</select>';
@@ -499,11 +520,25 @@ function scout_bedrock_model_field_callback() {
  * Vector DB endpoint field callback
  */
 function scout_vector_db_endpoint_field_callback() {
-    $enabled = get_option('scout_vector_db_enabled', false);
     $endpoint = get_option('scout_vector_db_endpoint', '');
     
-    $disabled = !$enabled ? 'disabled' : '';
-    
-    echo '<input type="text" name="scout_vector_db_endpoint" value="' . esc_attr($endpoint) . '" placeholder="postgresql://user:pass@host:5432/scout_vectors" size="60" ' . $disabled . ' />';
+    echo '<input type="text" name="scout_vector_db_endpoint" value="' . esc_attr($endpoint) . '" placeholder="postgresql://user:pass@host:5432/scout_vectors" size="60" />';
     echo '<p class="description">PostgreSQL connection string with pgvector extension. Format: postgresql://user:password@host:port/database. Leave blank if using AWS credentials from environment.</p>';
+}
+
+function scout_bedrock_knowledge_base_id_field_callback() {
+    $kb_id = get_option('scout_bedrock_knowledge_base_id', '');
+    
+    echo '<input type="text" name="scout_bedrock_knowledge_base_id" value="' . esc_attr($kb_id) . '" placeholder="XXXXXXXXXXXXXXXXXXXXX" size="60" />';
+    echo '<p class="description">Bedrock Knowledge Base ID (found in AWS Console → Bedrock → Knowledge Bases). This is used to retrieve semantically relevant images from your OpenSearch knowledge base.</p>';
+}
+
+/**
+ * Bedrock API Key field callback
+ */
+function scout_bedrock_api_key_field_callback() {
+    $api_key = get_option('scout_bedrock_api_key', '');
+    
+    echo '<input type="password" name="scout_bedrock_api_key" value="' . esc_attr($api_key) . '" placeholder="••••••••••••" size="60" />';
+    echo '<p class="description">Bedrock API Key for authentication. Generate this in AWS Console → Bedrock → API Keys. This is simpler and more secure than IAM credentials. Leave blank to use IAM credentials or environment variables.</p>';
 }

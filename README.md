@@ -1,6 +1,6 @@
 # Scout – AI Content Draft Generator
 
-![Version](https://img.shields.io/badge/v1.0.16-blue)
+![Version](https://img.shields.io/badge/v1.0.17-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0+-green)
 ![PHP](https://img.shields.io/badge/php-7.4+-purple)
 ![WordPress](https://img.shields.io/badge/wordpress-6.0+-blue)
@@ -14,7 +14,7 @@ Scout is a WordPress plugin that uses AI to generate first drafts of pages using
 - **Multi-Provider AI** – Works with Claude, OpenAI, Gemini, and more (choose what works best for you)
 - **Dynamic Block Discovery** – Automatically discovers and reads available blocks from the Carimus Backbone theme
 - **ACF Integration** – Understands ACF block structures and generates valid field data
-- **Media Library Integration** – AI intelligently selects images from your WordPress media library based on content context
+- **Intelligent Image Selection** – AI picks relevant images from your media library; optionally uses semantic search via AWS Bedrock Knowledge Base
 - **Post Type Selection** – Lock in your content type before starting (page, customer-story, post, resource, etc.)
 - **Smart Validation** – Rejects any blocks or fields outside the allowed set
 - **Draft-Only Creation** – Always saves as draft for human review and refinement
@@ -164,59 +164,62 @@ Scout is specially configured to handle WYSIWYG and rich text fields correctly:
 
 ### Vector Database Configuration (Optional)
 
-Scout can optionally integrate with AWS Bedrock for semantic image selection. This uses vector embeddings to find images from your media library that are semantically similar to the page content being generated.
+Scout can optionally integrate with AWS Bedrock Knowledge Base for semantic image selection. This uses vector embeddings to find images from your media library that are semantically similar to the page content being generated.
 
 #### Quick Setup
 
-1. In WordPress admin, go to **Scout → Settings**
-2. Scroll to **Vector Database Configuration**
-3. Check **Enable Vector DB for Image Search**
-4. Configure:
-    - **AWS Region** – Your Bedrock region (e.g., us-east-1, eu-west-1)
-    - **Bedrock Model** – Choose Titan or Cohere embeddings
-    - **Vector DB Endpoint** – PostgreSQL connection string (optional)
-5. Click **Save Settings**
+1. **Create a Bedrock Knowledge Base:**
+    - AWS Console → Bedrock → Knowledge Bases
+    - Create new knowledge base with web crawler data source (or use your existing KB)
+    - Store type: Amazon OpenSearch Serverless
+    - Note your **Knowledge Base ID**
+
+2. **Configure Scout:**
+    - WordPress admin → **Scout → Settings**
+    - Scroll to **Vector Database Configuration**
+    - Check **Enable Vector DB for Image Search**
+    - Set the following:
+        - **AWS Region** – Same region as your Bedrock KB (e.g., us-east-1)
+        - **Bedrock Embedding Model** – `amazon.titan-embed-text-v1` (recommended)
+        - **Bedrock Knowledge Base ID** – Your KB ID from step 1
+    - Click **Save Settings**
+
+3. **AWS Credentials:**
+    - Scout uses your server's AWS credentials (IAM role or environment variables)
+    - Recommended: Attach an IAM role to your server with `bedrock:InvokeModel` permissions
+    - Fallback: Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables
 
 #### How It Works
 
-- **When Enabled:** Scout embeds the generated content using AWS Bedrock, then queries your PostgreSQL vector database to find semantically relevant images from your media library
-- **When Disabled:** Scout randomly selects from the 50 most recent image uploads
+**With Vector DB Enabled:**
+
+- Content context is sent to Bedrock → embeddings generated using Titan model
+- Embeddings queried against your Knowledge Base → OpenSearch returns semantically ranked images
+- Scout sees images ranked by relevance and picks the best match for each block
+
+**Without Vector DB (Default):**
+
+- Scout randomly selects from the 50 most recent image uploads
+- No API calls, no additional infrastructure needed
 
 #### Environment Variable Configuration (Optional)
 
-If you prefer environment variables instead of WordPress settings:
+Configure via environment variables instead of WordPress settings:
 
 ```bash
 export SCOUT_VECTOR_DB_ENABLED=true
 export SCOUT_BEDROCK_REGION=us-east-1
 export SCOUT_BEDROCK_MODEL=amazon.titan-embed-text-v1
-export SCOUT_VECTOR_DB_ENDPOINT=postgresql://user:pass@host:5432/scout_vectors
+export SCOUT_BEDROCK_KNOWLEDGE_BASE_ID=your-kb-id-here
 ```
 
-#### Setting Up PostgreSQL with pgvector
+#### Cost Estimates
 
-For semantic search, you'll need a PostgreSQL database with the pgvector extension:
+- **Bedrock Embedding:** ~$0.02 per page generation (only for content generation)
+- **OpenSearch Serverless:** Pay-as-you-go, minimal cost for queries
+- **Total:** Less than $1/month for typical usage (50-100 pages/month)
 
-```sql
--- Create extension (run once)
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Create images table
-CREATE TABLE scout_images (
-    id SERIAL PRIMARY KEY,
-    attachment_id INT UNIQUE NOT NULL,
-    title VARCHAR(255),
-    alt_text TEXT,
-    embedding vector(1536),
-    synced_at TIMESTAMP DEFAULT NOW()
-);
-
--- Create index for fast similarity search
-CREATE INDEX ON scout_images USING ivfflat (embedding vector_cosine_ops)
-WITH (lists = 100);
-```
-
-**Note:** Vector database setup is optional. Scout works perfectly fine without it, using random image selection instead.
+**Note:** Vector database is completely optional. Scout works perfectly fine without it, using random image selection instead.
 
 ### Setup
 
@@ -338,14 +341,41 @@ Handles the creation of WordPress draft posts with the generated block content:
 
 ### Media Library Integration (`includes/media/placeholder.php`)
 
-Provides intelligent image selection with fallback to random selection:
+Provides intelligent image selection with optional semantic search via Vector DB:
 
 **Core Functions:**
 
-- **`scout_get_media_library_images($limit)`** – Fetches media library images with full metadata (ID, URL, alt text, title)
-    - Returns up to 50 most recent images by default (increased for better random selection)
-    - When Vector DB is enabled: Will use semantic similarity ranking (future implementation)
-- **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
+- **`scout_get_media_library_images($limit, $context)`** – Fetches media library images with full metadata
+    - **Without Vector DB:** Returns up to 50 most recent images randomly selected
+    - **With Vector DB:** Uses `$context` (page content) to query Bedrock Knowledge Base for semantically similar images (up to 999 results)
+    - Images are ranked by relevance score when Vector DB is enabled
+- **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format (ID, URL, alt text, width, height)
+
+### Vector Database Integration (`includes/media/vector-search.php`)
+
+Optional semantic image search using AWS Bedrock and OpenSearch Serverless:
+
+**Core Functions:**
+
+- **`scout_is_vector_db_configured()`** – Checks if all Vector DB settings are configured
+- **`scout_generate_bedrock_embedding($text)`** – Generates embeddings using AWS Bedrock Titan model
+- **`scout_query_knowledge_base_for_images($content, $limit)`** – Queries Bedrock Knowledge Base with content embedding
+- **`scout_get_semantic_images($content, $limit)`** – Main interface; returns semantically ranked images with fallback to random selection on error
+
+**Features:**
+
+- Graceful fallback to random selection if Vector DB is unavailable
+- Caches and reuses configurations per request
+- Logs errors for debugging without breaking page generation
+- Each content block can get different semantically-relevant images
+
+### AWS Bedrock Integration (`includes/ai/client.php`)
+
+Utilities for working with AWS Bedrock services:
+
+- **`scout_get_bedrock_client($region)`** – Initializes BedrockRuntime client for embeddings
+- **`scout_get_bedrock_agents_client($region)`** – Initializes BedrockAgentRuntime client for Knowledge Base queries
+- Uses server's IAM role or environment variables for authentication
 
 **Image Selection Logic:**
 

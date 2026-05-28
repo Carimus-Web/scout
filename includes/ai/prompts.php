@@ -7,9 +7,21 @@
  */
 function scout_build_prompt($messages, $allowed_blocks) {
     
-    // Get available media library images
+    // Get available media library images with context for semantic search
     require_once SCOUT_PATH . 'includes/media/placeholder.php';
-    $media_images = scout_get_media_library_images(20);
+    
+    // Extract content context from messages for semantic image search
+    $context = '';
+    if (is_array($messages)) {
+        foreach ($messages as $msg) {
+            if (is_array($msg) && isset($msg['content'])) {
+                $context .= ' ' . $msg['content'];
+            }
+        }
+    }
+    
+    // Get images with semantic search if Vector DB is configured
+    $media_images = scout_get_media_library_images(20, $context);
     
     // Identify which blocks support images by checking for image-type fields
     $blocks_with_images = [];
@@ -64,9 +76,15 @@ function scout_build_prompt($messages, $allowed_blocks) {
     }
     
     // Format available images for the AI
-    $images_description = "AVAILABLE MEDIA LIBRARY IMAGES:\n\n";
+    $is_using_vector_db = !empty($media_images[0]['from_vector_db']) && $media_images[0]['from_vector_db'];
+    $images_description = $is_using_vector_db 
+        ? "AVAILABLE MEDIA LIBRARY IMAGES (semantically ranked from Vector DB):\n\n"
+        : "AVAILABLE MEDIA LIBRARY IMAGES (random selection):\n\n";
+    
     foreach ($media_images as $img) {
-        $images_description .= "- ID {$img['id']}: {$img['title']} (Alt: {$img['alt_text']})\n";
+        $relevance = !empty($img['relevance_score']) ? " [Relevance: " . round($img['relevance_score'] * 100, 1) . "%]" : "";
+        $vector_source = !empty($img['from_vector_db']) ? " [FROM_VECTOR_DB]" : "";
+        $images_description .= "- ID {$img['id']}: {$img['title']} (Alt: {$img['alt_text']}){$relevance}{$vector_source}\n";
     }
 
     return [
@@ -79,15 +97,17 @@ function scout_build_prompt($messages, $allowed_blocks) {
             "3. Generate realistic, relevant content for each field based on the user's input\n" .
             "4. Do NOT try to design the page layout - that's already defined by the blocks\n" .
             "5. Do NOT suggest removing or changing blocks - work with what's available\n" .
-            "6. If you don't have enough information, ask clarifying questions\n" .
+            "6. Do NOT ask clarifying questions about which images to use - pick them automatically\n" .
             "7. Do NOT include emojis in any field values - keep content professional and text-only\n" .
             "8. For WYSIWYG and richtext fields: DO NOT include any HTML markup (no <p>, <b>, <i>, etc.) - only plain text and line breaks\n" .
-            "9. When you have enough information and are ready to create the page, return ONLY valid JSON with a descriptive title and the layout\n" .
-            "IMAGE HANDLING:\n" .
-            "- For blocks marked [SUPPORTS IMAGES], pick an image ID from the available media library that matches the content context\n" .
-            "- Use the image ID (not URL) in the JSON response\n" .
-            "- Pick images intelligently: e.g., for vehicle-related content, pick images with vehicles; for tech content, pick tech-related images\n" .
-            "- If no image is appropriate for a block, use image ID null or omit it\n\n" .
+            "9. When you have content to create the page, return ONLY valid JSON with a descriptive title and the layout\n" .
+            "IMAGE HANDLING (AUTOMATIC - DO NOT ASK):\n" .
+            "- For blocks marked [SUPPORTS IMAGES], you MUST automatically pick an image ID from the available media library\n" .
+            "- Include the image in the fields: \"image\": IMAGE_ID (where IMAGE_ID is a number from the list below)\n" .
+            "- Pick images intelligently: choose images that match the content context based on their titles and alt text\n" .
+            "- Always include an image for [SUPPORTS IMAGES] blocks - do NOT omit it or ask the user which one to use\n" .
+            "- If the available images don't perfectly match, pick the closest match. Picking an image is ALWAYS better than asking\n" .
+            "- Use Vector DB relevance scores (if shown) to help guide selection\n\n" .
             "PAGE TITLE:\n" .
             "- Create a descriptive, concise page title (3-8 words) that accurately reflects the page content\n" .
             "- The title should be professional and suitable for WordPress\n" .
@@ -98,8 +118,7 @@ function scout_build_prompt($messages, $allowed_blocks) {
             "  \"layout\": [\n" .
             "    {\n" .
             "      \"block\": \"carimus/block-name\",\n" .
-            "      \"fields\": { \"field_name\": \"value\", \"another_field\": \"value\" },\n" .
-            "      \"image\": IMAGE_ID_OR_NULL\n" .
+            "      \"fields\": { \"field_name\": \"value\", \"another_field\": \"value\", \"image\": IMAGE_ID_OR_NULL }\n" .
             "    }\n" .
             "  ]\n" .
             "}\n\n" .

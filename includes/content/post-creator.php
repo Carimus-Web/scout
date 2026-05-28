@@ -5,8 +5,6 @@ require_once SCOUT_PATH . 'includes/content/post-creator-helper.php';
 require_once SCOUT_PATH . 'includes/media/placeholder.php';
 
 function scout_create_post($postType, $layout, $title = 'AI Generated Page') {
-    error_log('scout_create_post called with postType: ' . $postType);
-
     $post_id = wp_insert_post([
         'post_type' => $postType,
         'post_status' => 'draft',
@@ -15,15 +13,11 @@ function scout_create_post($postType, $layout, $title = 'AI Generated Page') {
 
     // Check if post creation failed
     if (is_wp_error($post_id)) {
-        error_log('wp_insert_post failed: ' . $post_id->get_error_message());
+        error_log('Scout: wp_insert_post failed: ' . $post_id->get_error_message());
         return $post_id;
     }
 
-    error_log('Post created with ID: ' . $post_id);
-
     $content = scout_build_blocks($layout, $postType);
-    error_log('Blocks built, content length: ' . strlen($content));
-    error_log('Full serialized blocks: ' . $content);
 
     $updated = wp_update_post([
         'ID' => $post_id,
@@ -31,11 +25,9 @@ function scout_create_post($postType, $layout, $title = 'AI Generated Page') {
     ]);
 
     if (is_wp_error($updated)) {
-        error_log('wp_update_post failed: ' . $updated->get_error_message());
+        error_log('Scout: wp_update_post failed: ' . $updated->get_error_message());
         return $updated;
     }
-
-    error_log('Post content updated successfully');
     
     // Register repeater fields in post meta so ACF can find them during editing
     scout_register_repeater_fields($post_id, $layout);
@@ -44,20 +36,14 @@ function scout_create_post($postType, $layout, $title = 'AI Generated Page') {
 }
 
 function scout_update_post($post_id, $layout, $title = null) {
-    error_log('scout_update_post called with post_id: ' . $post_id);
-
     // Verify the post exists
     $post = get_post($post_id);
     if (!$post) {
-        error_log('Post not found with ID: ' . $post_id);
+        error_log('Scout: Post not found with ID: ' . $post_id);
         return new WP_Error('post_not_found', 'Post not found');
     }
 
-    error_log('Post found: ' . $post->post_title);
-
     $content = scout_build_blocks($layout, $post->post_type);
-    error_log('Blocks built, content length: ' . strlen($content));
-    error_log('Full serialized blocks: ' . $content);
 
     $update_args = [
         'ID' => $post_id,
@@ -72,11 +58,9 @@ function scout_update_post($post_id, $layout, $title = null) {
     $updated = wp_update_post($update_args);
 
     if (is_wp_error($updated)) {
-        error_log('wp_update_post failed: ' . $updated->get_error_message());
+        error_log('Scout: wp_update_post failed: ' . $updated->get_error_message());
         return $updated;
     }
-
-    error_log('Post content updated successfully');
     
     // Register repeater fields in post meta so ACF can find them during editing
     scout_register_repeater_fields($post_id, $layout);
