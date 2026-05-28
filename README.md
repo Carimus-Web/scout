@@ -1,6 +1,6 @@
 # Scout – AI Content Draft Generator
 
-![Version](https://img.shields.io/badge/v1.0.16-blue)
+![Version](https://img.shields.io/badge/v1.0.17-blue)
 ![License](https://img.shields.io/badge/license-GPL--2.0+-green)
 ![PHP](https://img.shields.io/badge/php-7.4+-purple)
 ![WordPress](https://img.shields.io/badge/wordpress-6.0+-blue)
@@ -14,7 +14,7 @@ Scout is a WordPress plugin that uses AI to generate first drafts of pages using
 - **Multi-Provider AI** – Works with Claude, OpenAI, Gemini, and more (choose what works best for you)
 - **Dynamic Block Discovery** – Automatically discovers and reads available blocks from the Carimus Backbone theme
 - **ACF Integration** – Understands ACF block structures and generates valid field data
-- **Media Library Integration** – AI intelligently selects images from your WordPress media library based on content context
+- **Intelligent Image Selection** – AI picks relevant images from your media library; optionally uses semantic search via AWS Bedrock Knowledge Base
 - **Post Type Selection** – Lock in your content type before starting (page, customer-story, post, resource, etc.)
 - **Smart Validation** – Rejects any blocks or fields outside the allowed set
 - **Draft-Only Creation** – Always saves as draft for human review and refinement
@@ -162,6 +162,65 @@ Scout is specially configured to handle WYSIWYG and rich text fields correctly:
 - **HTML Stripping:** During block building, any remaining HTML tags are removed from WYSIWYG content, preserving only plain text
 - **Result:** Your WYSIWYG fields display clean, properly formatted text without encoded entity artifacts
 
+### Vector Database Configuration (Optional)
+
+Scout can optionally integrate with AWS Bedrock Knowledge Base for semantic image selection. This uses vector embeddings to find images from your media library that are semantically similar to the page content being generated.
+
+#### Quick Setup
+
+1. **Create a Bedrock Knowledge Base:**
+    - AWS Console → Bedrock → Knowledge Bases
+    - Create new knowledge base with web crawler data source (or use your existing KB)
+    - Store type: Amazon OpenSearch Serverless
+    - Note your **Knowledge Base ID**
+
+2. **Configure Scout:**
+    - WordPress admin → **Scout → Settings**
+    - Scroll to **Vector Database Configuration**
+    - Check **Enable Vector DB for Image Search**
+    - Set the following:
+        - **AWS Region** – Same region as your Bedrock KB (e.g., us-east-1)
+        - **Bedrock Embedding Model** – `amazon.titan-embed-text-v1` (recommended)
+        - **Bedrock Knowledge Base ID** – Your KB ID from step 1
+    - Click **Save Settings**
+
+3. **AWS Credentials:**
+    - Scout uses your server's AWS credentials (IAM role or environment variables)
+    - Recommended: Attach an IAM role to your server with `bedrock:InvokeModel` permissions
+    - Fallback: Set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` environment variables
+
+#### How It Works
+
+**With Vector DB Enabled:**
+
+- Content context is sent to Bedrock → embeddings generated using Titan model
+- Embeddings queried against your Knowledge Base → OpenSearch returns semantically ranked images
+- Scout sees images ranked by relevance and picks the best match for each block
+
+**Without Vector DB (Default):**
+
+- Scout randomly selects from the 50 most recent image uploads
+- No API calls, no additional infrastructure needed
+
+#### Environment Variable Configuration (Optional)
+
+Configure via environment variables instead of WordPress settings:
+
+```bash
+export SCOUT_VECTOR_DB_ENABLED=true
+export SCOUT_BEDROCK_REGION=us-east-1
+export SCOUT_BEDROCK_MODEL=amazon.titan-embed-text-v1
+export SCOUT_BEDROCK_KNOWLEDGE_BASE_ID=your-kb-id-here
+```
+
+#### Cost Estimates
+
+- **Bedrock Embedding:** ~$0.02 per page generation (only for content generation)
+- **OpenSearch Serverless:** Pay-as-you-go, minimal cost for queries
+- **Total:** Less than $1/month for typical usage (50-100 pages/month)
+
+**Note:** Vector database is completely optional. Scout works perfectly fine without it, using random image selection instead.
+
 ### Setup
 
 1. Activate the Scout plugin in WordPress
@@ -184,13 +243,28 @@ Scout is specially configured to handle WYSIWYG and rich text fields correctly:
 
 ### Settings Configuration (`includes/admin/settings-config.php`)
 
-Handles provider and API key configuration:
+Handles provider and API key configuration, plus optional Vector Database settings:
+
+**AI Provider Settings:**
 
 - Registers WordPress settings and fields
 - Provides `scout_get_ai_provider()` – gets provider from WordPress options, falls back to env var
 - Provides `scout_get_api_key($provider)` – gets encrypted API key, falls back to env var
 - Encrypts API keys before storage, decrypts on retrieval
-- Settings accessible via **Scout → Settings** in WordPress admin
+
+**Vector Database Settings (Optional):**
+
+- Provides `scout_is_vector_db_enabled()` – checks if vector DB is configured
+- Provides `scout_get_bedrock_region()` – gets AWS region from settings or env var
+- Provides `scout_get_bedrock_model()` – gets embedding model (Titan or Cohere)
+- Provides `scout_get_vector_db_endpoint()` – gets PostgreSQL connection string
+- All settings accessible via **Scout → Settings** in WordPress admin
+- Environment variable fallback for all settings
+
+**Settings accessible via:**
+
+- **Scout → Settings** page in WordPress admin (recommended)
+- Environment variables (fallback)
 
 ### Block Metadata Reader (`includes/blocks/allowed.php`)
 
@@ -267,21 +341,65 @@ Handles the creation of WordPress draft posts with the generated block content:
 
 ### Media Library Integration (`includes/media/placeholder.php`)
 
-Scans the WordPress media library and provides intelligent image selection:
+Provides intelligent image selection with optional semantic search via Vector DB:
 
-- **`scout_get_media_library_images($limit)`** – Fetches up to 20 media library images with full metadata (ID, URL, alt text, dimensions, title)
-- **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format that blocks expect
-- AI receives media library context in the system prompt and selects images intelligently based on content context
-- For example: "vehicle-related" content triggers selection of images with vehicles
-- Images are stored with complete ACF metadata (ID, URL, alt text, width, height, caption)
+**Core Functions:**
 
-**How it works:**
+- **`scout_get_media_library_images($limit, $context)`** – Fetches media library images with full metadata
+    - **Without Vector DB:** Returns up to 50 most recent images randomly selected
+    - **With Vector DB:** Uses `$context` (page content) to query Bedrock Knowledge Base for semantically similar images (up to 999 results)
+    - Images are ranked by relevance score when Vector DB is enabled
+- **`scout_attachment_id_to_acf_image($attachment_id)`** – Converts attachment IDs to ACF image array format (ID, URL, alt text, width, height)
 
-1. When generating a page, Scout fetches the 20 most recent images from your media library
-2. Image metadata is included in the AI prompt so Claude can reference them
-3. For blocks with image fields, Claude analyzes the content and selects appropriate image IDs
-4. Image IDs are converted to full ACF image arrays before being stored in blocks
-5. Blocks render with real images from your library instead of placeholders
+### Vector Database Integration (`includes/media/vector-search.php`)
+
+Optional semantic image search using AWS Bedrock and OpenSearch Serverless:
+
+**Core Functions:**
+
+- **`scout_is_vector_db_configured()`** – Checks if all Vector DB settings are configured
+- **`scout_generate_bedrock_embedding($text)`** – Generates embeddings using AWS Bedrock Titan model
+- **`scout_query_knowledge_base_for_images($content, $limit)`** – Queries Bedrock Knowledge Base with content embedding
+- **`scout_get_semantic_images($content, $limit)`** – Main interface; returns semantically ranked images with fallback to random selection on error
+
+**Features:**
+
+- Graceful fallback to random selection if Vector DB is unavailable
+- Caches and reuses configurations per request
+- Logs errors for debugging without breaking page generation
+- Each content block can get different semantically-relevant images
+
+### AWS Bedrock Integration (`includes/ai/client.php`)
+
+Utilities for working with AWS Bedrock services:
+
+- **`scout_get_bedrock_client($region)`** – Initializes BedrockRuntime client for embeddings
+- **`scout_get_bedrock_agents_client($region)`** – Initializes BedrockAgentRuntime client for Knowledge Base queries
+- Uses server's IAM role or environment variables for authentication
+
+**Image Selection Logic:**
+
+**Without Vector DB (Current):**
+
+1. Fetch 50 most recent images from media library
+2. AI receives image metadata in the system prompt
+3. AI randomly selects from the 50 most recent images
+4. Simple but works well for active media libraries
+
+**With Vector DB (Future):**
+
+1. Fetch embeddings for all images in media library
+2. AI generates page content
+3. Embed content using Bedrock embeddings API
+4. Query PostgreSQL for semantically similar images
+5. AI selects from best matches (ranked by relevance)
+6. Dramatically improved image relevance for generated content
+
+**Examples:**
+
+- "vehicle" content → selects images with vehicles
+- "office" content → selects images with office spaces
+- "team" content → selects images with people
 
 ## API
 
@@ -315,11 +433,67 @@ Response:
 ### File Locations
 
 - **Frontend App:** `assets/js/app.js`
+- **Frontend Templates:** `assets/js/templates/`
+- **Template HTML:** `assets/html/`
 - **Admin Settings:** `includes/admin/settings-config.php` and `includes/admin/settings-page.php`
 - **Admin Menu:** `includes/admin/menu.php`
 - **API Routes:** `includes/api/routes.php`
 - **Block Discovery:** `includes/blocks/allowed.php`
 - **AI Prompts:** `includes/ai/prompts.php`
+
+### Frontend Template System
+
+Scout uses a modular template architecture to keep markup clean and maintainable:
+
+#### HTML Templates (`assets/html/`)
+
+Separate HTML files for each UI component:
+
+- **`main-layout.html`** – Main app container with chat sidebar and preview panel
+- **`preview-idle.html`** – Ready state with rocket emoji and feature list
+- **`preview-loading.html`** – Loading animation with spinner
+- **`preview-error.html`** – Error display with warning message
+- **`preview-iframe.html`** – Draft page preview iframe (uses {{POST_URL}} and {{EDIT_URL}} placeholders)
+
+#### Template Modules (`assets/js/templates/`)
+
+JavaScript modules that expose template functions:
+
+- **`loader.js`** – Template loading and caching system
+    - Pre-loads templates server-side into `window.SCOUT_TEMPLATES`
+    - Provides `getTemplateSync(name)` for instant access
+    - Fallback `loadTemplate(name)` for dynamic loading
+- **`mainLayout.js`** – Main layout template retrieval
+    - `getMainLayoutHTML()` – Returns main container HTML
+- **`previewStates.js`** – Preview state templates
+    - `getPreviewIdleHTML()` – Ready state
+    - `getPreviewLoadingHTML()` – Loading animation
+    - `getPreviewErrorHTML()` – Error state
+- **`previewIframe.js`** – Preview iframe template
+    - `getPreviewIframeHTML(postUrl, editUrl)` – Returns iframe with substituted URLs
+    - `setupIframeScaling()` – Responsive scaling for 1440px preview
+- **`utils.js`** – Helper utilities
+    - `escapeHtml()` – HTML entity escaping
+    - `parseMarkdown()` – Markdown parsing for chat messages
+
+#### How Templates Work
+
+1. **Server-side loading** – `includes/admin/assets.php` reads all HTML files and embeds them in `window.SCOUT_TEMPLATES`
+2. **Pre-loading** – Templates are available instantly (no network delay on first render)
+3. **Synchronous access** – Template functions use `getTemplateSync()` to return cached HTML immediately
+4. **VS Code friendly** – HTML files get proper syntax highlighting and formatting in editors
+5. **Dynamic templates** – The iframe template uses `{{POST_URL}}` and `{{EDIT_URL}}` placeholders replaced at runtime
+
+#### Editing Templates
+
+To update the UI:
+
+- **Change app layout?** → Edit `assets/html/main-layout.html`
+- **Update preview states?** → Edit the corresponding `preview-*.html` files
+- **Modify iframe styling?** → Edit `assets/html/preview-iframe.html`
+- **Add utilities?** → Add functions to `assets/js/templates/utils.js`
+
+HTML files are properly formatted and syntax-highlighted in VS Code – no more editing markup embedded in JavaScript strings!
 
 ### Using Settings Functions
 

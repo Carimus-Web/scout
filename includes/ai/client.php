@@ -279,3 +279,101 @@ function scout_decode_html_entities($content) {
 
     return $content;
 }
+
+/**
+ * Initialize and return AWS Bedrock client
+ * Uses WordPress server environment credentials (IAM role or env vars)
+ * 
+ * @param string $region AWS region (default: us-east-1)
+ * @return \Aws\BedrockRuntime\BedrockRuntimeClient|null
+ */
+function scout_get_bedrock_client($region = 'us-east-1') {
+    try {
+        // Bypass Composer platform check for PHP version compatibility
+        if (!getenv('COMPOSER_DISABLE_PLATFORM_CHECK')) {
+            putenv('COMPOSER_DISABLE_PLATFORM_CHECK=1');
+        }
+        
+        // Load AWS SDK
+        $autoload_path = SCOUT_PATH . 'vendor/autoload.php';
+        if (!file_exists($autoload_path)) {
+            return null;
+        }
+        
+        require_once $autoload_path;
+        
+        // Verify AWS SDK is loaded
+        if (!class_exists('Aws\BedrockRuntime\BedrockRuntimeClient')) {
+            error_log('Scout: Bedrock SDK not available - Vector DB will use fallback images');
+            return null;
+        }
+        
+        // Build client config
+        $config = [
+            'region' => $region,
+            'version' => 'latest'
+        ];
+        
+        // Check for Bedrock API Key (preferred method)
+        $api_key = get_option('scout_bedrock_api_key', '');
+        
+        if (!empty($api_key)) {
+            $config['credentials'] = new \Aws\Credentials\Credentials($api_key, 'bedrock-api-key');
+        }
+        
+        $client = new \Aws\BedrockRuntime\BedrockRuntimeClient($config);
+        return $client;
+    } catch (Exception $e) {
+        error_log('Scout: Bedrock client error: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Initialize and return AWS Bedrock Agents Runtime client
+ * Used for Knowledge Base queries
+ * 
+ * @param string $region AWS region (default: us-east-1)
+ * @return \Aws\BedrockAgentRuntime\BedrockAgentRuntimeClient|null
+ */
+function scout_get_bedrock_agents_client($region = 'us-east-1') {
+    try {
+        // Bypass Composer platform check for PHP version compatibility
+        if (!getenv('COMPOSER_DISABLE_PLATFORM_CHECK')) {
+            putenv('COMPOSER_DISABLE_PLATFORM_CHECK=1');
+        }
+        
+        // Load AWS SDK
+        $autoload_path = SCOUT_PATH . 'vendor/autoload.php';
+        if (!file_exists($autoload_path)) {
+            return null;
+        }
+        
+        require_once $autoload_path;
+        
+        // Verify AWS SDK is loaded
+        if (!class_exists('Aws\BedrockAgentRuntime\BedrockAgentRuntimeClient')) {
+            error_log('Scout: Bedrock SDK not available - Vector DB will use fallback images');
+            return null;
+        }
+        
+        // Build client config
+        $config = [
+            'region' => $region,
+            'version' => 'latest'
+        ];
+        
+        // Check for Bedrock API Key (preferred method)
+        $api_key = get_option('scout_bedrock_api_key', '');
+        
+        if (!empty($api_key)) {
+            $config['credentials'] = new \Aws\Credentials\Credentials($api_key, 'bedrock-api-key');
+        }
+        
+        $client = new \Aws\BedrockAgentRuntime\BedrockAgentRuntimeClient($config);
+        return $client;
+    } catch (Exception $e) {
+        error_log('Scout: Bedrock Agents client error: ' . $e->getMessage());
+        return null;
+    }
+}

@@ -1,7 +1,7 @@
 {
     "name": "carimus/scout",
     "description": "AI-powered content draft generator for WordPress using Carimus Backbone theme blocks",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "authors": [
@@ -12,7 +12,8 @@
     ],
     "require": {
         "php": ">=7.4",
-        "composer/installers": "^2.0 || ^1.0"
+        "composer/installers": "^2.0 || ^1.0",
+        "aws/aws-sdk-php": "3.215.0"
     },
     "require-dev": {
         "wp-phpunit/wp-phpunit": "^6.0"
@@ -32,5 +33,10 @@
         "openai",
         "block-editor"
     ],
-    "homepage": "https://github.com/Carimus-Web/scout"
+    "homepage": "https://github.com/Carimus-Web/scout",
+    "config": {
+        "allow-plugins": {
+            "composer/installers": false
+        }
+    }
 }

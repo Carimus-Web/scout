@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Scout
  * Description: AI-powered content draft generator for WordPress using Carimus Backbone theme blocks
- * Version: 1.0.16
+ * Version: 1.0.17
  * Author: Carimus
  * Author URI: https://carimus.com
  * Plugin URI: https://github.com/Carimus-Web/scout
@@ -14,7 +14,7 @@
  * Requires PHP: 7.4
  */
 
-define('SCOUT_VERSION', '1.0.16');
+define('SCOUT_VERSION', '1.0.17');
 define('SCOUT_PATH', plugin_dir_path(__FILE__));
 define('SCOUT_URL', plugin_dir_url(__FILE__));
 

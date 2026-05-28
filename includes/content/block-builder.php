@@ -21,6 +21,84 @@ function scout_clean_wysiwyg_content($content) {
 }
 
 /**
+ * Extract background color from a block's render.php file
+ * 
+ * Detects background colors by scanning the render template for:
+ * - Hardcoded bg-* classes in class attributes
+ * - PHP ternary expressions with conditional backgrounds (e.g., theme-based)
+ * 
+ * Used to determine padding between consecutive blocks with matching backgrounds.
+ * 
+ * @param string $block_type Block type without 'carimus/' prefix
+ * @return string|null The background class (e.g., 'bg-primary-900') or null if not found
+ */
+function scout_extract_background_color_from_render($block_type) {
+    $theme_dir = get_stylesheet_directory();
+    $render_file = $theme_dir . '/templates/blocks/' . $block_type . '/render.php';
+    
+    if (!file_exists($render_file)) {
+        return null;
+    }
+    
+    $content = file_get_contents($render_file);
+    if ($content === false) {
+        return null;
+    }
+    
+    // Try to find hardcoded bg-* classes in class attributes (not inside PHP)
+    if (preg_match('/class="([^<]*\bbg-[a-zA-Z0-9\-]+[^<]*)"/i', $content, $matches)) {
+        $classes = $matches[1];
+        if (strpos($classes, '<?php') === false && strpos($classes, '?>') === false) {
+            if (preg_match('/\b(bg-[a-zA-Z0-9\-]+)\b/', $classes, $bg_match)) {
+                return $bg_match[1];
+            }
+        }
+    }
+    
+    // Look for PHP ternary expressions with bg-* classes
+    if (preg_match('/\?\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?\s*:\s*["\']?(bg-[a-zA-Z0-9\-]+)["\']?/i', $content, $bg_match)) {
+        $option1 = $bg_match[1];
+        $option2 = $bg_match[2];
+        
+        // Prefer the colored background over white/transparent
+        if (scout_is_colored_background($option2)) {
+            return $option2;
+        } elseif (scout_is_colored_background($option1)) {
+            return $option1;
+        }
+    }
+    
+    return null;
+}
+
+/**
+ * Check if a background color is considered "colored"
+ * 
+ * Returns false for white, transparent, or unset backgrounds.
+ * 
+ * @param string|null $bg_class The background class to check
+ * @return bool True if it's a colored background
+ */
+function scout_is_colored_background($bg_class) {
+    static $non_colored = null;
+    
+    if ($non_colored === null) {
+        $non_colored = [
+            'bg-white',
+            'bg-transparent',
+            'bg-none',
+            'bg-inherit',
+        ];
+    }
+    
+    if (!$bg_class) {
+        return false;
+    }
+    
+    return !in_array(strtolower($bg_class), $non_colored);
+}
+
+/**
  * Get all field keys for a specific block type from ACF JSON definitions
  * 
  * @param string $block_type Block type without 'carimus/' prefix (e.g., 'highlights')
@@ -154,6 +232,14 @@ function scout_build_blocks($layout, $postType = null) {
 
     $totalBlocks = count($layout);
     
+    // Pre-extract background colors for all blocks for comparison
+    $block_bg_colors = [];
+    foreach ($layout as $idx => $blk) {
+        $block_type = str_replace('carimus/', '', $blk['block']);
+        $bg_color = scout_extract_background_color_from_render($block_type);
+        $block_bg_colors[$idx] = $bg_color;
+    }
+    
     foreach ($layout as $blockIndex => $block) {
 
         $fields = $block['fields'];
@@ -174,8 +260,30 @@ function scout_build_blocks($layout, $postType = null) {
                 }
             }
             
+            // Handle image fields - extract ID only for block storage
+            if ($field_name === 'image' || $field_type === 'image') {
+                $image_id = null;
+                
+                if (is_numeric($field_value) && $field_value > 0) {
+                    $image_id = $field_value;
+                } elseif (is_array($field_value) && isset($field_value['id'])) {
+                    // Extract ID from full image object
+                    $image_id = $field_value['id'];
+                } elseif (is_array($field_value) && isset($field_value['ID'])) {
+                    // Extract ID from full image object (uppercase key)
+                    $image_id = $field_value['ID'];
+                }
+                
+                // Store just the ID for block attribute storage
+                if ($image_id) {
+                    $acf_fields[$field_name] = (string)$image_id;
+                } else {
+                    // Skip if no valid image
+                    continue;
+                }
+            }
             // Handle repeater fields - store in FLAT format
-            if ($field_type === 'repeater') {
+            elseif ($field_type === 'repeater') {
                 if (!is_array($field_value)) {
                     if (is_string($field_value)) {
                         $decoded = json_decode($field_value, true);
@@ -222,25 +330,26 @@ function scout_build_blocks($layout, $postType = null) {
             }
         }
         
-        // Handle image field
-        if (isset($block['image'])) {
-            if (is_numeric($block['image']) && $block['image'] > 0) {
-                $image_array = scout_attachment_id_to_acf_image($block['image']);
-                if ($image_array) {
-                    $acf_fields['image'] = $image_array;
-                }
-            } elseif (!empty($block['image'])) {
-                $random_id = scout_get_placeholder_image();
-                $image_array = scout_attachment_id_to_acf_image($random_id);
-                if ($image_array) {
-                    $acf_fields['image'] = $image_array;
-                }
+        // Determine bottom padding based on background colors
+        $isLastBlock = ($blockIndex === $totalBlocks - 1);
+        
+        // Default: none for last block, lg for all others
+        $bottomPadding = $isLastBlock ? 'none' : 'lg';
+        
+        // Check if current and next block have the same colored background
+        if (!$isLastBlock) {
+            $current_bg = $block_bg_colors[$blockIndex] ?? null;
+            $next_bg = $block_bg_colors[$blockIndex + 1] ?? null;
+            
+            // If both blocks have colored backgrounds and they match, set padding to none
+            if (
+                scout_is_colored_background($current_bg) &&
+                scout_is_colored_background($next_bg) &&
+                $current_bg === $next_bg
+            ) {
+                $bottomPadding = 'none';
             }
         }
-
-        // Determine bottom padding: none for last block, lg for all others
-        $isLastBlock = ($blockIndex === $totalBlocks - 1);
-        $bottomPadding = $isLastBlock ? 'none' : 'lg';
 
         // Add padding in NESTED format for render templates (they call get_field('padding'))
         // The structure matches ACF's nested format

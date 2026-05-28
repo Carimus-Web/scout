@@ -19,10 +19,26 @@ function scout_get_placeholder_image() {
  * Get up to N images from media library with full metadata
  * Returns array of images with ID, URL, alt text
  * 
- * @param int $limit Number of images to retrieve (default: 20)
+ * When Vector DB is disabled: Returns up to 50 most recent images
+ * When Vector DB is enabled: Will use semantic search (requires content context)
+ * 
+ * @param int $limit Number of images to retrieve (default: 50 when Vector DB disabled, can be overridden)
+ * @param string $context Optional context for semantic search (e.g., page content)
  * @return array Array of image objects with id, url, alt_text, title
  */
-function scout_get_media_library_images($limit = 20) {
+function scout_get_media_library_images($limit = null, $context = '') {
+    // If Vector DB is enabled and we have context, use semantic search with no limit
+    if (!empty($context)) {
+        require_once SCOUT_PATH . 'includes/media/vector-search.php';
+        if (scout_is_vector_db_configured()) {
+            return scout_get_semantic_images($context, 999);  // No practical limit for Vector DB
+        }
+    }
+    
+    // Fall back to latest images from media library
+    if (is_null($limit)) {
+        $limit = 50;
+    }
     
     $images = get_posts([
         'post_type' => 'attachment',

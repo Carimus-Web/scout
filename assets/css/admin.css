@@ -19,6 +19,19 @@
         sans-serif;
 }
 
+form {
+    h2 {
+        font-size: 22px;
+        font-weight: 600;
+    }
+
+    table.form-table {
+        padding-bottom: 30px !important;
+        margin-bottom: 30px !important;
+        border-bottom: 1px solid #ddd;
+    }
+}
+
 /* Custom Animations */
 @keyframes shimmer {
     0% {
@@ -250,4 +263,23 @@
 
 .prose p:last-child {
     margin-bottom: 0;
+}
+
+/* Settings Form Styling */
+#scout_settings h2 {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    padding-top: 20px;
+    padding-bottom: 15px;
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #1e40af;
+    border-top: 1px solid #ddd;
+    border-bottom: 3px solid #3b82f6;
+    letter-spacing: -0.5px;
+}
+
+#scout_settings h2:first-of-type {
+    margin-top: 0;
+    border-top: none;
 }

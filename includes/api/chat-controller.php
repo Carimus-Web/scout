@@ -67,7 +67,8 @@ function scout_chat_handler($request) {
                 ];
             }
 
-            $post_id = scout_create_post($postType, $ai['layout']);
+            $title = !empty($ai['title']) ? $ai['title'] : 'AI Generated Page';
+            $post_id = scout_create_post($postType, $ai['layout'], $title);
 
             if (is_wp_error($post_id)) {
                 return [
@@ -124,6 +125,7 @@ function scout_create_page_handler($request) {
         $layout = isset($params['layout']) ? $params['layout'] : null;
         $postType = isset($params['postType']) ? $params['postType'] : null;
         $post_id = isset($params['post_id']) ? intval($params['post_id']) : null;
+        $title = isset($params['title']) ? $params['title'] : null;
 
         if (empty($layout) || empty($postType)) {
             return [
@@ -133,10 +135,10 @@ function scout_create_page_handler($request) {
 
         if ($post_id) {
             // Update existing post
-            $result = scout_update_post($post_id, $layout);
+            $result = scout_update_post($post_id, $layout, $title);
         } else {
             // Create new post
-            $result = scout_create_post($postType, $layout);
+            $result = scout_create_post($postType, $layout, $title ?? 'AI Generated Page');
         }
 
         if (is_wp_error($result)) {
